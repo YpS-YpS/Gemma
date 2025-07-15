@@ -113,8 +113,8 @@ class HybridConfigParser:
 class AutomationGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Katana - Game Automator | Ver 1.0.0")
-        self.root.geometry("1600x800")
+        self.root.title("Katana - Game Automator | Ver 1.0.0 | Alpha Release")
+        self.root.geometry("1800x900")  # Set initial size
         self.root.minsize(800, 600)
         
         # Variables
@@ -122,9 +122,9 @@ class AutomationGUI:
         self.sut_port = tk.StringVar(value="8080")
         self.game_path = tk.StringVar()  # No default value - will be populated from config
         self.lm_studio_url = tk.StringVar(value="http://127.0.0.1:1234")
-        self.config_path = tk.StringVar(value="config/games/cs2_simple.yaml")
+        self.config_path = tk.StringVar(value="config/games/cs2_simple_rev2.yaml")
         self.max_iterations = tk.StringVar(value="50")
-        self.vision_model = tk.StringVar(value="gemma")  # Default to Gemma
+        self.vision_model = tk.StringVar(value="omniparser")  # Default to Omniparser
         self.omniparser_url = tk.StringVar(value="http://localhost:8000")  # Default Omniparser URL
         self.running = False
         self.process_thread = None
@@ -145,11 +145,39 @@ class AutomationGUI:
         self.style.configure("Red.TButton", background="red")
         
         # Start queue processing
-        self.root.after(100, self.process_log_queue)
+        self.root.after(100, self.setup_auto_test_if_omniparser)
         
         # Save references to running objects
         self.automation_thread = None
         self.stop_event = threading.Event()
+
+    def setup_auto_test_if_omniparser(self):
+        """Setup auto-test if omniparser is selected"""
+        if self.vision_model.get() == "omniparser":
+            self.root.after(2000, self.auto_test_omniparser)
+        else:
+            # If not omniparser, show "Not Connected"
+            self.omniparser_status_label.config(text="Not Connected", foreground="red")
+
+    def auto_test_omniparser(self):
+        """Auto-test omniparser connection"""
+        self.omniparser_status_label.config(text="**Testing...**", foreground="blue")
+        self.root.after(100, self.perform_auto_test)
+
+    def perform_auto_test(self):
+        """Perform the actual auto-test"""
+        try:
+            import requests
+            response = requests.get(f"{self.omniparser_url.get()}/probe", timeout=5)
+            if response.status_code == 200:
+                self.omniparser_status_label.config(text="Connected", foreground="green")
+                self.logger.info("Auto-connected to Omniparser server on startup!")
+            else:
+                self.omniparser_status_label.config(text="Connection Failed", foreground="red")
+                self.logger.info(f"Auto-test failed: HTTP {response.status_code}")
+        except Exception as e:
+            self.omniparser_status_label.config(text="Connection Failed", foreground="red")
+            self.logger.info(f"Auto-test failed (server may not be running): {str(e)}")
 
     def setup_logger(self):
         """Configure logging to both file and GUI"""
@@ -190,11 +218,11 @@ class AutomationGUI:
         right_pane.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(5, 0))
         
         # ===== SETTINGS SECTION (LEFT PANE) =====
-        settings_frame = ttk.LabelFrame(left_pane, text="Settings", padding="10")
+        settings_frame = ttk.LabelFrame(left_pane, text="Configure settings, connections, and YAML files", padding="10")
         settings_frame.pack(fill=tk.X, padx=5, pady=5)
         
         # ===== GROUP 1: SUT CONNECTION SETTINGS =====
-        sut_group = ttk.LabelFrame(settings_frame, text="SUT Connection", padding="10")
+        sut_group = ttk.LabelFrame(settings_frame, text="SUT Connection | SUT IP:Port", padding="10")
         sut_group.pack(fill=tk.X, pady=(0, 10))
         
         # Create a frame for horizontal layout
@@ -208,9 +236,9 @@ class AutomationGUI:
         # SUT Port
         ttk.Label(sut_row, text="Port:").pack(side=tk.LEFT, padx=(0, 5))
         ttk.Entry(sut_row, textvariable=self.sut_port, width=8).pack(side=tk.LEFT)
-        
-        # ===== GROUP 2: VISION SYSTEM (LLM Models) =====
-        vision_group = ttk.LabelFrame(settings_frame, text="Vision System - LLM Models", padding="10")
+
+        # ===== GROUP 2: VISION SYSTEM (LLM & VL Models) =====
+        vision_group = ttk.LabelFrame(settings_frame, text="Vision System - LLM & VL Models", padding="10")
         vision_group.pack(fill=tk.X, pady=(0, 10))
         
         # LM Studio URL
@@ -240,6 +268,9 @@ class AutomationGUI:
         ttk.Radiobutton(omniparser_select_row, text="Use Omniparser", variable=self.vision_model, 
                        value="omniparser", command=self.update_vision_model_ui).pack(side=tk.LEFT)
         
+        # ADDED: Auto-test omniparser connection on startup
+        self.root.after(100, self.setup_auto_test_if_omniparser)
+
         # Omniparser URL and Test Connection (always visible within this group)
         omniparser_url_row = ttk.Frame(omniparser_group)
         omniparser_url_row.pack(fill=tk.X)
@@ -248,7 +279,8 @@ class AutomationGUI:
         ttk.Entry(omniparser_url_row, textvariable=self.omniparser_url, width=25).pack(side=tk.LEFT, padx=(0, 10))
         
         # Connection status and test button
-        self.omniparser_status_label = ttk.Label(omniparser_url_row, text="Not Connected", foreground="red")
+        # self.omniparser_status_label = ttk.Label(omniparser_url_row, text="Not Connected", foreground="red") -- legacy code
+        self.omniparser_status_label = ttk.Label(omniparser_url_row, text="**Auto testing in 2 seconds...**", foreground="red")
         self.omniparser_status_label.pack(side=tk.LEFT, padx=(0, 10))
         ttk.Button(omniparser_url_row, text="Test Connection", 
                   command=self.test_omniparser_connection).pack(side=tk.LEFT)
@@ -474,7 +506,7 @@ class AutomationGUI:
         # This method can be extended if you want to hide/show certain elements
         pass
     
-    def test_omniparser_connection(self):
+    def test_omniparser_connection(self, auto_test=False):
         """Test connection to Omniparser server"""
         try:
             import requests
