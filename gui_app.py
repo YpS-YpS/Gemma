@@ -671,8 +671,8 @@ class AutomationGUI:
             messagebox.showerror("Error", f"Could not open screenshot: {str(e)}")
 
     def start_automation(self):
-        """Start the automation process in a separate thread"""
-        # Validate inputs
+        """Start the automation process"""
+        # Validate inputs first (existing validation code)
         try:
             port = int(self.sut_port.get())
             iterations = int(self.max_iterations.get())
@@ -681,16 +681,17 @@ class AutomationGUI:
         except ValueError as e:
             messagebox.showerror("Invalid Input", str(e))
             return
-        
+
         if not self.sut_ip.get():
             messagebox.showerror("Invalid Input", "SUT IP address is required")
             return
             
-        # Modified game path validation - now it's a warning instead of an error
+        # Warn about missing game path
         if not self.game_path.get():
-            response = messagebox.askyesno("No Game Path", 
-                                         "No game path specified. The config file should contain the path.\n\n"
-                                         "Do you want to continue anyway?")
+            response = messagebox.askyesno("Warning", 
+                                        "No game path specified. "
+                                        "The config file should contain the path.\n\n"
+                                        "Do you want to continue anyway?")
             if not response:
                 return
             
@@ -700,7 +701,36 @@ class AutomationGUI:
             
         # Load game info to ensure we have the game name
         self.load_game_info()
-            
+        
+        # *** NEW: Test SUT connection BEFORE setting status to "Running" ***
+        self.status_label.config(text="Connecting...", foreground="orange")
+        self.start_button.config(state=tk.DISABLED)  # Disable button during connection test
+        
+        # Test connection in a separate thread to avoid freezing GUI
+        def test_connection():
+            try:
+                from modules.network import NetworkManager
+                # Just test the connection, don't keep the object
+                test_network = NetworkManager(self.sut_ip.get(), int(self.sut_port.get()))
+                test_network.close()  # Close the test connection
+                
+                # Connection successful - proceed with automation
+                self.root.after(0, self._start_automation_after_connection_test)
+                
+            except Exception as e:
+                # Connection failed - reset status and show error
+                error_msg = f"Failed to connect to SUT at {self.sut_ip.get()}:{self.sut_port.get()}: {str(e)}"
+                self.logger.error(error_msg)
+                
+                # Update GUI in main thread
+                self.root.after(0, lambda: self._handle_connection_failure(error_msg))
+        
+        # Start connection test in background thread
+        connection_thread = threading.Thread(target=test_connection, daemon=True)
+        connection_thread.start()
+
+    def _start_automation_after_connection_test(self):
+        """Continue with automation startup after successful connection test"""
         # Clear stop event and update GUI state
         self.stop_event.clear()
         self.running = True
@@ -717,6 +747,20 @@ class AutomationGUI:
         
         # Log start
         self.logger.info(f"Starting automation process for {self.game_name}...")
+
+    def _handle_connection_failure(self, error_msg):
+        """Handle SUT connection failure"""
+        self.status_label.config(text="Connection Failed", foreground="red")
+        self.start_button.config(state=tk.NORMAL)  # Re-enable start button
+        messagebox.showerror("Connection Error", 
+                            f"Cannot connect to SUT.\n\n{error_msg}\n\n"
+                            "Please check:\n"
+                            "• SUT service is running\n"
+                            "• IP address and port are correct\n"
+                            "• Firewall settings\n"
+                            "• Network connectivity")
+        # Reset status back to Ready after user closes the error dialog
+        self.status_label.config(text="Ready", foreground="blue")
 
     def stop_automation(self):
         """Stop the automation process"""
