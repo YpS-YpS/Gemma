@@ -161,7 +161,7 @@ class AutomationGUI:
 
     def auto_test_omniparser(self):
         """Auto-test omniparser connection"""
-        self.omniparser_status_label.config(text="**Testing...**", foreground="blue")
+        self.omniparser_status_label.config(text="**Testing...", foreground="blue")
         self.root.after(100, self.perform_auto_test)
 
     def perform_auto_test(self):
@@ -254,19 +254,19 @@ class AutomationGUI:
         
         # Radio buttons for Gemma and Qwen VL
         ttk.Radiobutton(model_row, text="Gemma", variable=self.vision_model, 
-                       value="gemma", command=self.update_vision_model_ui).pack(side=tk.LEFT, padx=(0, 15))
+                    value="gemma", command=self.update_vision_model_ui).pack(side=tk.LEFT, padx=(0, 15))
         ttk.Radiobutton(model_row, text="Qwen VL", variable=self.vision_model, 
-                       value="qwen", command=self.update_vision_model_ui).pack(side=tk.LEFT)
+                    value="qwen", command=self.update_vision_model_ui).pack(side=tk.LEFT)
         
         # ===== GROUP 3: OMNIPARSER =====
-        omniparser_group = ttk.LabelFrame(settings_frame, text="Omniparser + Flowrunner", padding="10")
+        omniparser_group = ttk.LabelFrame(settings_frame, text="Omniparser + Flowrunner | Steps based decision (Default - Alpha release)", padding="10")
         omniparser_group.pack(fill=tk.X, pady=(0, 10))
         
         # Radio button for Omniparser
         omniparser_select_row = ttk.Frame(omniparser_group)
         omniparser_select_row.pack(fill=tk.X, pady=(0, 10))
         ttk.Radiobutton(omniparser_select_row, text="Use Omniparser", variable=self.vision_model, 
-                       value="omniparser", command=self.update_vision_model_ui).pack(side=tk.LEFT)
+                    value="omniparser", command=self.update_vision_model_ui).pack(side=tk.LEFT)
         
         # ADDED: Auto-test omniparser connection on startup
         self.root.after(100, self.setup_auto_test_if_omniparser)
@@ -283,15 +283,23 @@ class AutomationGUI:
         self.omniparser_status_label = ttk.Label(omniparser_url_row, text="**Auto testing in 2 seconds...**", foreground="red")
         self.omniparser_status_label.pack(side=tk.LEFT, padx=(0, 10))
         ttk.Button(omniparser_url_row, text="Test Connection", 
-                  command=self.test_omniparser_connection).pack(side=tk.LEFT)
+                command=self.test_omniparser_connection).pack(side=tk.LEFT)
         
-        # ===== GAME AND CONFIG SETTINGS =====
-        # These remain outside the groups since they're common to all modes
-        game_config_frame = ttk.Frame(settings_frame)
-        game_config_frame.pack(fill=tk.X, pady=(10, 0))
+        # ===== GROUP 4: GAME CONFIGURATION =====
+        game_group = ttk.LabelFrame(settings_frame, text="Game Configuration and YAML file", padding="10")
+        game_group.pack(fill=tk.X, pady=(0, 10))
+        
+        # Config File
+        config_row = ttk.Frame(game_group)
+        config_row.pack(fill=tk.X, pady=(0, 10))
+        ttk.Label(config_row, text="Config File:").pack(side=tk.LEFT, padx=(0, 5))
+        config_entry_frame = ttk.Frame(config_row)
+        config_entry_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+        ttk.Entry(config_entry_frame, textvariable=self.config_path).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.Button(config_row, text="Browse...", command=self.browse_config_path).pack(side=tk.LEFT)
         
         # Game Path (modified to show it's a remote path)
-        game_path_row = ttk.Frame(game_config_frame)
+        game_path_row = ttk.Frame(game_group)
         game_path_row.pack(fill=tk.X, pady=(0, 10))
         
         # Updated label to indicate this is a remote path
@@ -319,29 +327,20 @@ class AutomationGUI:
         self.verify_path_button = ttk.Button(game_path_row, text="Verify", command=self.verify_game_path)
         self.verify_path_button.pack(side=tk.LEFT)
         
-        # Config File
-        config_row = ttk.Frame(game_config_frame)
-        config_row.pack(fill=tk.X, pady=(0, 10))
-        ttk.Label(config_row, text="Config File:").pack(side=tk.LEFT, padx=(0, 5))
-        config_entry_frame = ttk.Frame(config_row)
-        config_entry_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
-        ttk.Entry(config_entry_frame, textvariable=self.config_path).pack(side=tk.LEFT, fill=tk.X, expand=True)
-        ttk.Button(config_row, text="Browse...", command=self.browse_config_path).pack(side=tk.LEFT)
-        
         # Max Iterations
-        iter_row = ttk.Frame(game_config_frame)
+        iter_row = ttk.Frame(game_group)
         iter_row.pack(fill=tk.X, pady=(0, 10))
-        ttk.Label(iter_row, text="Max Iterations:").pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Label(iter_row, text="Max Iterations(Don't touch):").pack(side=tk.LEFT, padx=(0, 5))
         ttk.Entry(iter_row, textvariable=self.max_iterations, width=10).pack(side=tk.LEFT)
         
         # Game Info and Config Type
-        info_row = ttk.Frame(game_config_frame)
+        info_row = ttk.Frame(game_group)
         info_row.pack(fill=tk.X, pady=(0, 5))
         ttk.Label(info_row, text="Game Info:").pack(side=tk.LEFT, padx=(0, 5))
         self.game_info_label = ttk.Label(info_row, text="No valid config file selected", foreground="blue")
         self.game_info_label.pack(side=tk.LEFT)
         
-        config_type_row = ttk.Frame(game_config_frame)
+        config_type_row = ttk.Frame(game_group)
         config_type_row.pack(fill=tk.X)
         ttk.Label(config_type_row, text="Config Type:").pack(side=tk.LEFT, padx=(0, 5))
         self.config_type_label = ttk.Label(config_type_row, text="No config loaded", foreground="gray")
@@ -388,24 +387,24 @@ class AutomationGUI:
         
         # Version label
         version_label = ttk.Label(footer_frame, 
-                                 text="Version 1.0", 
-                                 font=("TkDefaultFont", 9, "italic"),
-                                 foreground="gray")
+                                text="Version 1.0", 
+                                font=("TkDefaultFont", 9, "italic"),
+                                foreground="gray")
         version_label.pack()
         
         # Feedback text
         feedback_label = ttk.Label(footer_frame, 
-                                  text="For feedbacks/suggestions and issues please email to",
-                                  font=("TkDefaultFont", 8),
-                                  foreground="gray")
+                                text="For feedbacks/suggestions and issues please email to",
+                                font=("TkDefaultFont", 8),
+                                foreground="gray")
         feedback_label.pack(pady=(5, 0))
         
         # Email address
         email_label = ttk.Label(footer_frame, 
-                               text="satyajit.bhuyan@intel.com",
-                               font=("TkDefaultFont", 8, "underline"),
-                               foreground="blue",
-                               cursor="hand2")
+                            text="satyajit.bhuyan@intel.com",
+                            font=("TkDefaultFont", 8, "underline"),
+                            foreground="blue",
+                            cursor="hand2")
         email_label.pack()
         
         # Make email clickable
@@ -426,8 +425,9 @@ class AutomationGUI:
         self.log_area.tag_config("ERROR", foreground="red")
         self.log_area.tag_config("CRITICAL", foreground="red", background="yellow")
         
-        # Load game info if a config file is already selected
-        self.load_game_info()
+        # Start processing the log queue
+        self.process_log_queue()
+        self.load_game_info()  # Load initial game info from config
 
     def create_tooltip(self, widget, text):
         """Create a tooltip for a widget"""
