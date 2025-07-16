@@ -857,6 +857,14 @@ class AutomationGUI:
             elif self.vision_model.get() == 'omniparser':
                 self.logger.info("Using Omniparser for UI detection")
                 vision_model = OmniparserClient(self.omniparser_url.get())
+
+            # *** NEW: Only create annotator for LLM models ***
+            annotator = None
+            if self.vision_model.get() in ['gemma', 'qwen']:
+                annotator = Annotator()
+                self.logger.info("Annotation enabled for LLM-based vision model")
+            else:
+                self.logger.info("Using native Omniparser annotations (no local annotator)")
                 
             annotator = Annotator()
             game_launcher = GameLauncher(network)
