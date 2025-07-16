@@ -1,0 +1,200 @@
+# Black Myth Wukong Benchmark Configuration
+metadata:
+  game_name: "Black Myth Wukong"
+  path: "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Black Myth Wukong Benchmark Tool\\b1\\Binaries\\Win64\\b1-Win64-Shipping.exe"
+  # process_id: "b1"  # Actual process name in Task Manager
+  version: "1.0"
+  benchmark_duration: 150
+  startup_wait: 30
+  resolution: "1920x1080"
+  preset: "High"
+
+# Simple step-by-step workflow
+steps:
+  1:
+    description: "Click Anywhere in the screen"
+    find:
+      type: "icon"
+      text: "Wukong"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      move_duration: 0.5
+      click_delay: 0.5
+    verify_success:
+      - type: "icon"
+        text: "Benchmark"
+        text_match: "contains"
+    expected_delay: 10
+    timeout: 20
+
+  2:
+    description: "Click Benchmark"
+    find:
+      type: "icon"
+      text: "Benchmark"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      move_duration: 0.5
+      click_delay: 0.5
+    verify_success:
+      - type: "icon"
+        text: "Confirm"
+        text_match: "contains"
+    expected_delay: 5
+    timeout: 20
+
+  3:
+    description: "Click Confirm to start benchmark"
+    find:
+      type: "icon"
+      text: "Confirm"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      move_duration: 0.5
+      click_delay: 0.5
+    verify_success: 
+      - type: "icon"
+        text: "current"
+        text_match: "contains"
+    expected_delay: 5
+    timeout: 20
+
+  4:
+    description: "Wait for benchmark to run"
+    action:
+      type: "wait"
+      duration: 155
+    expected_delay: 0
+    timeout: 120
+
+  5:
+    description: "Benchmark Result Page"
+    find:
+      type: "icon"
+      text: "Benchmark Results"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "right"
+    expected_delay: 5
+    timeout: 20
+
+  6:
+    description: "Click Confirm to exit benchmark"
+    find:
+      type: "icon"
+      text: "exit the benchmark"
+      text_match: "contains"
+    action:
+      type: "key"
+      key: "enter"
+    verify_success:
+      - type: "icon"
+        text: "Wukong"
+        text_match: "contains"
+    expected_delay: 10
+    timeout: 20
+
+  7:
+    description: "Click Anywhere in the screen"
+    find:
+      type: "icon"
+      text: "Wukong"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+    verify_success:
+      - type: "icon"
+        text: "Exit"
+        text_match: "contains"
+    expected_delay: 5
+    timeout: 20
+
+  8:
+    description: "Click Exit"
+    find:
+      type: "icon"
+      text: "Exit"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+    verify_success:
+      - type: "icon"
+        text: "Confirm"
+    expected_delay: 5
+    timeout: 20
+
+  9:
+    description: "Click Confirm to exit to desktop"
+    find:
+      type: "icon"
+      text: "quit to desktop"
+      text_match: "contains"
+    action:
+      type: "key"
+      key: "enter"
+    expected_delay: 5
+    timeout: 20
+
+# Fallback actions
+fallbacks:
+  general:
+    action: "key"
+    key: "Escape"
+    expected_delay: 1
+    max_retries: 3
+
+Click: 2
+Key: Escape, Enter
+
+1:
+  description: "Click Exit "
+  find:
+    type: "icon"
+    text: "Exit"
+    text_match: "contains"
+  action:
+    type: "click"
+    button: "Right"
+  verify_success:
+    - type: "icon"
+      text: "Confirm"
+  expected_delay: 5
+  timeout: 20
+
+2:
+  description: "Click Play "
+  find:
+    type: "icon"
+    text: "Play"
+    text_match: "contains"
+  action:
+    type: "key"
+    button: "enter"
+  verify_success:
+    - type: "icon"
+      text: "Settings"
+  expected_delay: 5
+  timeout: 20
+3:
+  description: "Click Settings "
+  find:
+    type: "icon"
+    text: "Settings"
+    text_match: "contains"
+  action:
+    type: "key"
+    button: "m"
+  verify_success:
+    - type: "icon"
+      text: "Video"
+  expected_delay: 5
+  timeout: 20
