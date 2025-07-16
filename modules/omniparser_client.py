@@ -106,16 +106,18 @@ class OmniparserClient:
                     # Only include interactive elements if they have content
                     if is_interactive and element.get('content'):
                         # Create BoundingBox object
-                        bbox = BoundingBox(
-                            x=abs_x1,
-                            y=abs_y1,
-                            width=abs_x2 - abs_x1,
-                            height=abs_y2 - abs_y1,
-                            confidence=1.0,  # Set to 1.0 since Omniparser doesn't provide confidence
-                            element_type=element.get('type', 'unknown'),
-                            element_text=element.get('content', '')
-                        )
-                        bounding_boxes.append(bbox)
+                        if 'bbox' in element:
+                            # Create BoundingBox object for ALL elements
+                            bbox = BoundingBox(
+                                x=abs_x1,
+                                y=abs_y1,
+                                width=abs_x2 - abs_x1,
+                                height=abs_y2 - abs_y1,
+                                confidence=1.0,
+                                element_type=element.get('type', 'unknown'),
+                                element_text=element.get('content', '')
+                            )
+                            bounding_boxes.append(bbox)
                         logger.debug(f"Added interactive element: {element.get('content')}")
                 else:
                     logger.debug(f"Element {i} has no bbox field, skipping")

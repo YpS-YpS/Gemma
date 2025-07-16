@@ -171,16 +171,13 @@ def screenshot():
 
 @app.route('/launch', methods=['POST'])
 def launch_game():
-    """Launch a game with enhanced process tracking and parameters."""
+    """Launch a game with support for process ID tracking - FIXED for Steam games."""
     global game_process, current_game_process_name
     
     try:
         data = request.json
         game_path = data.get('path', '')
-        process_id = data.get('process_id', '')
-        launch_args = data.get('args', [])  # Command line arguments
-        working_dir = data.get('working_dir', '')  # Working directory
-        admin_mode = data.get('admin_mode', False)  # Run as administrator
+        process_id = data.get('process_id', '')  # Expected process name
         
         if not game_path or not os.path.exists(game_path):
             logger.error(f"Game path not found: {game_path}")
@@ -193,6 +190,7 @@ def launch_game():
                 terminate_process_by_name(current_game_process_name)
                 current_game_process_name = None
             
+            # Also terminate using the old method if we have a subprocess handle
             if game_process and game_process.poll() is None:
                 logger.info("Terminating existing game subprocess")
                 game_process.terminate()
@@ -201,58 +199,54 @@ def launch_game():
                 except subprocess.TimeoutExpired:
                     game_process.kill()
             
-            # Prepare launch command
-            cmd = [game_path] + launch_args
-            launch_kwargs = {}
-            
-            if working_dir and os.path.exists(working_dir):
-                launch_kwargs['cwd'] = working_dir
-            
             # Launch the game
-            logger.info(f"Launching game: {' '.join(cmd)}")
+            logger.info(f"Launching game: {game_path}")
             if process_id:
+                logger.info(f"Expected process name: {process_id}")
                 current_game_process_name = process_id
             else:
+                # Fallback to executable name without extension
                 current_game_process_name = os.path.splitext(os.path.basename(game_path))[0]
             
-            if admin_mode:
-                # Launch with elevated privileges
-                logger.info("Launching with administrator privileges")
-                import subprocess
-                game_process = subprocess.Popen(
-                    ['runas', '/user:Administrator'] + cmd,
-                    **launch_kwargs
-                )
-            else:
-                game_process = subprocess.Popen(cmd, **launch_kwargs)
+            game_process = subprocess.Popen(game_path)
+            logger.info(f"Subprocess started with PID: {game_process.pid}")
             
-            # Verification and response
+            # FIXED: Don't fail if subprocess exits - this is normal for Steam games
+            # Wait a moment and check subprocess status but don't treat exit as failure
             time.sleep(3)
-            if game_process.poll() is not None:
-                logger.error("Game subprocess failed to start")
-                return jsonify({"status": "error", "error": "Game subprocess failed to start"}), 500
+            subprocess_status = "running" if game_process.poll() is None else "exited"
+            logger.info(f"Subprocess status after 3 seconds: {subprocess_status}")
             
-            time.sleep(2)
-            actual_process = find_process_by_name(current_game_process_name)
+            # Give the actual game process time to start (important for Steam games)
+            max_wait_time = 15  # Wait up to 15 seconds for the game process to appear
+            wait_interval = 1
+            actual_process = None
+            
+            for i in range(max_wait_time):
+                time.sleep(wait_interval)
+                actual_process = find_process_by_name(current_game_process_name)
+                if actual_process:
+                    logger.info(f"Game process found after {i+1} seconds: {actual_process.name()} (PID: {actual_process.pid})")
+                    break
+                elif i == 5:  # Log progress at 5 seconds
+                    logger.info(f"Still waiting for game process '{current_game_process_name}' to start...")
             
             response_data = {
-                "status": "success", 
+                "status": "success",
                 "subprocess_pid": game_process.pid,
-                "launch_args": launch_args,
-                "admin_mode": admin_mode
+                "subprocess_status": subprocess_status
             }
             
             if actual_process:
-                response_data.update({
-                    "game_process_pid": actual_process.pid,
-                    "game_process_name": actual_process.name(),
-                    "memory_usage": actual_process.memory_percent(),
-                    "cpu_usage": actual_process.cpu_percent()
-                })
-                logger.info(f"Game process found: {actual_process.name()} (PID: {actual_process.pid})")
+                response_data["game_process_pid"] = actual_process.pid
+                response_data["game_process_name"] = actual_process.name()
+                response_data["game_process_status"] = actual_process.status()
+                logger.info(f"✓ Game launched successfully: {actual_process.name()} (PID: {actual_process.pid})")
             else:
-                logger.warning(f"Could not find game process with name: {current_game_process_name}")
-                response_data["warning"] = f"Could not verify game process: {current_game_process_name}"
+                # This is now a warning, not an error - the game might still be starting
+                logger.warning(f"Game process '{current_game_process_name}' not found within {max_wait_time} seconds")
+                logger.warning("The game might still be starting or the process_id might be incorrect")
+                response_data["warning"] = f"Game process '{current_game_process_name}' not detected within {max_wait_time}s, but subprocess launched successfully"
         
         return jsonify(response_data)
         

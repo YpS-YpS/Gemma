@@ -2,10 +2,10 @@
 metadata:
   game_name: "Black Myth Wukong"
   path: "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Black Myth Wukong Benchmark Tool\\b1\\Binaries\\Win64\\b1-Win64-Shipping.exe"
-  # process_id: "b1"  # Actual process name in Task Manager
+  process_id: "b1"  # Actual process name in Task Manager
   version: "1.0"
   benchmark_duration: 150
-  startup_wait: 30
+  startup_wait: 50
   resolution: "1920x1080"
   preset: "High"
 
@@ -14,7 +14,7 @@ steps:
   1:
     description: "Click Anywhere in the screen"
     find:
-      type: "icon"
+      type: "text"
       text: "Wukong"
       text_match: "contains"
     action:
