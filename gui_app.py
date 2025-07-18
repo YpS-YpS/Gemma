@@ -118,7 +118,7 @@ class AutomationGUI:
         self.root.minsize(800, 600)
         
         # Variables
-        self.sut_ip = tk.StringVar(value="192.168.50.231")
+        self.sut_ip = tk.StringVar(value="192.168.50.230")
         self.sut_port = tk.StringVar(value="8080")
         self.game_path = tk.StringVar()  # No default value - will be populated from config
         self.lm_studio_url = tk.StringVar(value="http://127.0.0.1:1234")
