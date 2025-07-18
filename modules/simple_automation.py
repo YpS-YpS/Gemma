@@ -51,6 +51,21 @@ class SimpleAutomation:
         logger.info(f"SimpleAutomation initialized for {self.game_name}")
         if self.process_id:
             logger.info(f"Process ID tracking enabled: {self.process_id}")
+
+    def _execute_fallback(self):
+        """Execute fallback action when step fails."""
+        fallback = self.config.get("fallbacks", {}).get("general", {})
+        if fallback:
+            action_type = fallback.get("action")
+            if action_type == "key":
+                key = fallback.get("key", "Escape")
+                logger.info(f"Executing fallback: Press key {key}")
+                try:
+                    self.network.send_action({"type": "key", "key": key})
+                except Exception as e:
+                    logger.error(f"Failed to execute fallback key action: {str(e)}")
+        # Add delay after fallback
+        time.sleep(fallback.get("expected_delay", 1))
             
     def run(self):
         """Run the enhanced step-by-step automation with optional step handling."""
