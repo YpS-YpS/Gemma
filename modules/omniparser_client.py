@@ -1,6 +1,7 @@
 """
 Client for interacting with the Omniparser server.
 Sends screenshots and receives UI element detections.
+Enhanced with streamlined annotation handling to eliminate redundant processing.
 """
 
 import os
@@ -19,7 +20,7 @@ from modules.gemma_client import BoundingBox  # Reuse the BoundingBox class
 logger = logging.getLogger(__name__)
 
 class OmniparserClient:
-    """Client for the Omniparser API server."""
+    """Client for the Omniparser API server with streamlined annotation handling."""
     
     def __init__(self, api_url: str = "http://localhost:8000"):
         """
@@ -30,7 +31,7 @@ class OmniparserClient:
         """
         self.api_url = api_url
         self.session = requests.Session()
-        # Assuming 1920x1080 resolution - adjust as needed for your target resolution
+        # Assuming 2560x1600 resolution - adjust as needed for your target resolution
         self.screen_width = 2560
         self.screen_height = 1600
         logger.info(f"OmniparserClient initialized with API URL: {api_url}")
@@ -65,6 +66,7 @@ class OmniparserClient:
     def _parse_omniparser_response(self, response_data: Dict) -> List[BoundingBox]:
         """
         Parse the response from Omniparser into BoundingBox objects.
+        COMPREHENSIVE filtering to capture ALL useful elements for gaming performance analysis.
         
         Args:
             response_data: Response JSON from Omniparser
@@ -82,10 +84,15 @@ class OmniparserClient:
         if parsed_content_list and len(parsed_content_list) > 0:
             logger.debug(f"First item example: {json.dumps(parsed_content_list[0], indent=2)}")
         
+        # Counters for different element types
+        interactive_count = 0
+        text_count = 0
+        performance_data_count = 0
+        
         # Process each detected element
         for i, element in enumerate(parsed_content_list):
             try:
-                # Process only elements that have bbox data
+                # Process ALL elements that have bbox data
                 if 'bbox' in element:
                     # Get normalized coordinates (0-1 range)
                     bbox_coords = element['bbox']
@@ -100,32 +107,76 @@ class OmniparserClient:
                     abs_x2 = int(x2 * self.screen_width)
                     abs_y2 = int(y2 * self.screen_height)
                     
-                    # Check for interactivity - prefer interactive elements
+                    # Get element properties
                     is_interactive = element.get('interactivity', False)
+                    element_type = element.get('type', 'unknown')
+                    element_content = element.get('content', '').strip()
                     
-                    # Only include interactive elements if they have content
-                    if is_interactive and element.get('content'):
+                    # COMPREHENSIVE INCLUSION LOGIC - Capture everything useful
+                    should_include = False
+                    inclusion_reason = ""
+                    
+                    if is_interactive:
+                        # Include ALL interactive elements (UI buttons, icons, etc.)
+                        should_include = True
+                        inclusion_reason = "interactive"
+                        interactive_count += 1
+                    elif element_content:
+                        # Include ALL elements with text content - critical for performance data
+                        should_include = True
+                        inclusion_reason = "has_content"
+                        text_count += 1
+                        
+                        # Check if this looks like performance data
+                        if any(keyword in element_content.lower() for keyword in [
+                            'fps', 'avg', 'p1', 'p99', 'frame', 'ms', 'hz', 'performance',
+                            'rendering', 'simulation', 'client', 'server', 'prof'
+                        ]):
+                            performance_data_count += 1
+                            inclusion_reason = "performance_data"
+                    elif element_type in ['icon', 'image', 'graphic', 'button']:
+                        # Include visual elements that might be important for state detection
+                        should_include = True
+                        inclusion_reason = "visual_element"
+                    elif (abs_x2 - abs_x1) > 30 and (abs_y2 - abs_y1) > 15:
+                        # Include reasonably-sized elements (might be containers, progress bars, etc.)
+                        should_include = True
+                        inclusion_reason = "significant_size"
+                    
+                    if should_include:
                         # Create BoundingBox object
-                        if 'bbox' in element:
-                            # Create BoundingBox object for ALL elements
-                            bbox = BoundingBox(
-                                x=abs_x1,
-                                y=abs_y1,
-                                width=abs_x2 - abs_x1,
-                                height=abs_y2 - abs_y1,
-                                confidence=1.0,
-                                element_type=element.get('type', 'unknown'),
-                                element_text=element.get('content', '')
-                            )
-                            bounding_boxes.append(bbox)
-                        logger.debug(f"Added interactive element: {element.get('content')}")
+                        bbox = BoundingBox(
+                            x=abs_x1,
+                            y=abs_y1,
+                            width=abs_x2 - abs_x1,
+                            height=abs_y2 - abs_y1,
+                            confidence=1.0,
+                            element_type=element_type,
+                            element_text=element_content
+                        )
+                        bounding_boxes.append(bbox)
+                        
+                        # Log important elements
+                        if inclusion_reason == "performance_data":
+                            logger.info(f"🎯 PERFORMANCE DATA: '{element_content[:50]}...'")
+                        else:
+                            logger.debug(f"Added element ({inclusion_reason}): type='{element_type}', content='{element_content[:30]}...'")
+                    else:
+                        logger.debug(f"Skipped element {i}: type='{element_type}', interactive={is_interactive}, content='{element_content[:20]}...'")
+                        
                 else:
                     logger.debug(f"Element {i} has no bbox field, skipping")
                     
             except (KeyError, ValueError, IndexError) as e:
                 logger.warning(f"Error parsing element {i}: {str(e)}")
         
-        logger.info(f"Successfully extracted {len(bounding_boxes)} interactive UI elements")
+        # Enhanced logging with breakdown
+        logger.info(f"Successfully extracted {len(bounding_boxes)} UI elements:")
+        logger.info(f"  - Interactive elements: {interactive_count}")
+        logger.info(f"  - Text/content elements: {text_count}")
+        logger.info(f"  - Performance data elements: {performance_data_count}")
+        logger.info(f"  - Total useful elements: {len(bounding_boxes)}")
+        
         return bounding_boxes
     
     def _format_bounding_boxes(self, bboxes: List[BoundingBox]) -> str:
@@ -154,12 +205,13 @@ class OmniparserClient:
         
         return "\n".join(formatted)
     
-    def detect_ui_elements(self, image_path: str) -> List[BoundingBox]:
+    def detect_ui_elements(self, image_path: str, annotation_path: str = None) -> List[BoundingBox]:
         """
-        Send an image to Omniparser and get UI element detections.
+        Send an image to Omniparser and get UI element detections with streamlined annotation handling.
         
         Args:
             image_path: Path to the screenshot image
+            annotation_path: Optional path to save server annotation (NEW STREAMLINED APPROACH)
         
         Returns:
             List of detected UI elements with bounding boxes
@@ -194,18 +246,6 @@ class OmniparserClient:
             # Parse the response
             response_data = response.json()
             
-            # Create a clean copy without the base64 image data
-            clean_response = response_data.copy()
-            if "som_image_base64" in clean_response:
-                clean_response.pop("som_image_base64")
-                clean_response["som_image_base64_present"] = True
-            
-            # Save the clean JSON response to a file
-            json_path = os.path.splitext(image_path)[0] + ".json"
-            with open(json_path, "w", encoding="utf-8") as json_file:
-                json.dump(clean_response, json_file, indent=2)
-            logger.info(f"Saved clean Omniparser JSON response to {json_path}")
-
             # Log performance metrics if available
             if "latency" in response_data:
                 logger.info(f"Omniparser processing time: {response_data['latency']:.2f} seconds")
@@ -213,36 +253,37 @@ class OmniparserClient:
             # Extract and convert bounding boxes
             bounding_boxes = self._parse_omniparser_response(response_data)
             
-            # Save the annotated image if provided
+            # STREAMLINED ANNOTATION HANDLING - Single source of truth
             if "som_image_base64" in response_data:
-                try:
-                    annotated_dir = os.path.dirname(image_path)
-                    annotated_path = os.path.join(annotated_dir, f"omniparser_{os.path.basename(image_path)}")
-                    
-                    # Decode and save the annotated image
-                    img_data = base64.b64decode(response_data["som_image_base64"])
-                    with open(annotated_path, "wb") as f:
-                        f.write(img_data)
-                    logger.info(f"Saved Omniparser annotated image to {annotated_path}")
-                except Exception as e:
-                    logger.warning(f"Failed to save annotated image: {str(e)}")
+                if annotation_path:
+                    # Save server annotation to the specified path (NEW STREAMLINED APPROACH)
+                    try:
+                        os.makedirs(os.path.dirname(annotation_path), exist_ok=True)
+                        img_data = base64.b64decode(response_data["som_image_base64"])
+                        with open(annotation_path, "wb") as f:
+                            f.write(img_data)
+                        logger.info(f"Saved Omniparser server annotation to {annotation_path}")
+                    except Exception as e:
+                        logger.warning(f"Failed to save server annotation: {str(e)}")
+                else:
+                    # Backward compatibility: save with old naming convention for non-SimpleAutomation usage
+                    try:
+                        annotated_dir = os.path.dirname(image_path)
+                        fallback_path = os.path.join(annotated_dir, f"omniparser_{os.path.basename(image_path)}")
+                        img_data = base64.b64decode(response_data["som_image_base64"])
+                        with open(fallback_path, "wb") as f:
+                            f.write(img_data)
+                        logger.info(f"Saved Omniparser annotation to {fallback_path} (fallback mode)")
+                    except Exception as e:
+                        logger.warning(f"Failed to save fallback annotation: {str(e)}")
             
-            # Log decision engine input data
-            logger.debug("=== DECISION ENGINE INPUT DATA ===")
-            logger.debug(f"Sending {len(bounding_boxes)} UI elements to decision engine:")
-            for i, bbox in enumerate(bounding_boxes):
-                logger.debug(f"  Element {i+1}:")
-                logger.debug(f"    Type: {bbox.element_type}")
-                logger.debug(f"    Text: '{bbox.element_text}'")
-                logger.debug(f"    Position: (x={bbox.x}, y={bbox.y}, w={bbox.width}, h={bbox.height})")
-            logger.debug("=== END OF DECISION ENGINE INPUT ===")
-
+            # Save clean JSON response (without base64 data for debugging)
+            self._save_clean_json_response(response_data, image_path)
+            
             # Log detected elements in compact format
-            formatted_boxes = self._format_bounding_boxes(bounding_boxes)
-            logger.info(f"Detected {len(bounding_boxes)} UI elements in {image_path}:")
-            for line in formatted_boxes.split('\n'):
-                logger.info(f"  {line}")
-
+            logger.info(f"Detected {len(bounding_boxes)} UI elements from Omniparser server")
+            self._log_detected_elements(bounding_boxes)
+            
             return bounding_boxes
             
         except requests.RequestException as e:
@@ -251,6 +292,29 @@ class OmniparserClient:
         except Exception as e:
             logger.error(f"Failed to parse Omniparser response: {str(e)}")
             raise ValueError(f"Invalid response from Omniparser API: {str(e)}")
+    
+    def _save_clean_json_response(self, response_data: Dict, image_path: str):
+        """Save JSON response without base64 image data for debugging."""
+        clean_response = response_data.copy()
+        if "som_image_base64" in clean_response:
+            clean_response.pop("som_image_base64")
+            clean_response["som_image_base64_present"] = True
+        
+        json_path = os.path.splitext(image_path)[0] + ".json"
+        with open(json_path, "w", encoding="utf-8") as json_file:
+            json.dump(clean_response, json_file, indent=2)
+        logger.debug(f"Saved clean JSON response to {json_path}")
+    
+    def _log_detected_elements(self, bounding_boxes: List[BoundingBox]):
+        """Log detected elements in a compact format."""
+        if bounding_boxes:
+            for i, bbox in enumerate(bounding_boxes):
+                element_text = bbox.element_text if bbox.element_text else "(no text)"
+                if len(element_text) > 30:
+                    element_text = element_text[:27] + "..."
+                logger.info(f"  [{i+1}] {bbox.element_type} at ({bbox.x},{bbox.y},{bbox.width}x{bbox.height}): '{element_text}'")
+        else:
+            logger.info("  No UI elements detected")
     
     def close(self):
         """Close the session."""

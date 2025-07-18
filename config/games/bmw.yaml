@@ -62,7 +62,7 @@ steps:
       - type: "icon"
         text: "current"
         text_match: "contains"
-    expected_delay: 5
+    expected_delay: 20
     timeout: 20
 
   4:
