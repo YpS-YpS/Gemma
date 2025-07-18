@@ -1,6 +1,6 @@
 # Needs omniparser : https://github.com/microsoft/OmniParser
 
-# Katana/VCAP - Game Automator - ** Alpha Unstable WIP **
+# Katana/VCAP - Game Automator - Alpha Unstable WIP
 
 **An AI-Powered Game UI Navigation and Benchmarking System**
 
