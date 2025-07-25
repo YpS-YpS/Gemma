@@ -161,7 +161,7 @@ class AutomationGUI:
 
     def auto_test_omniparser(self):
         """Auto-test omniparser connection"""
-        self.omniparser_status_label.config(text="**Testing...", foreground="blue")
+        self.omniparser_status_label.config(text="**Testing..*Please wait*", foreground="blue")
         self.root.after(100, self.perform_auto_test)
 
     def perform_auto_test(self):

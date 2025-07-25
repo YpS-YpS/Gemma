@@ -1,0 +1,520 @@
+# Comprehensive Game Configuration Example
+# Demonstrates ALL possible action types and features
+
+metadata:
+  game_name: "MS Paint Application"
+  path: "C:\\Program Files\\WindowsApps\\Microsoft.Paint_11.2506.71.0_x64__8wekyb3d8bbwe\\PaintApp\\mspaint.exe"
+  process_id: "mspaint.exe"
+  version: "2.0"
+  benchmark_duration: 0 # No benchmark duration for MS Paint - can use it for generation time - TBD
+  startup_wait: 10 # Wait for the application to load
+  resolution: "1920x1080"
+  preset: ""
+
+# Enhanced features configuration
+enhanced_features:
+  monitor_process_cpu: true
+  screenshot_on_failure: true
+  detailed_logging: true
+
+# Main automation steps - comprehensive action examples
+steps:
+  # === BASIC CLICK ACTIONS ===
+  1:
+    description: "Click on Copilot button to select copilot dropdown"
+    find:
+      type: "icon"
+      text: "copilot"
+      text_match: "contains"
+    action:
+      type: "hotkey"
+      keys: ["alt", "c"]
+    verify_success:
+      - type: "text"
+        text: "cocreator"
+        text_match: "contains"
+    expected_delay: 2
+    timeout: 20
+
+  2:
+    description: "enter cocreator mode by enter"
+    action:
+      type: "key"
+      key: "enter"
+    verify_success:
+      - type: "icon"
+        text: "cocreator"
+    expected_delay: 1
+    timeout: 15
+
+  3:
+    description: "find and add prompt"
+    find:
+      type: "text"
+      text: "you'd like"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      move_duration: 0.5
+      click_delay: 0.9
+    verify_success:
+    expected_delay: 2
+
+  4:
+    description: "Double-click to open advanced settings"
+    find:
+      type: "icon"
+      text: "Advanced"
+    action:
+      type: "double_click"
+      button: "left"
+    expected_delay: 2
+
+  # === KEYBOARD ACTIONS ===
+  5:
+    description: "Press Enter key"
+    action:
+      type: "key"
+      key: "enter"
+    expected_delay: 1
+
+  6:
+    description: "Press function key F11 for fullscreen"
+    action:
+      type: "key"
+      key: "f11"
+    expected_delay: 2
+
+  7:
+    description: "Press Escape to cancel"
+    action:
+      type: "key"
+      key: "escape"
+    expected_delay: 1
+
+  8:
+    description: "Press Tab to navigate"
+    action:
+      type: "key"
+      key: "tab"
+    expected_delay: 0.5
+
+  9:
+    description: "Press Spacebar"
+    action:
+      type: "key"
+      key: "space"
+    expected_delay: 0.5
+
+  10:
+    description: "Press Arrow keys for navigation"
+    action:
+      type: "key"
+      key: "down"
+    expected_delay: 0.5
+
+  # === HOTKEY COMBINATIONS ===
+  11:
+    description: "Ctrl+S to save settings"
+    action:
+      type: "hotkey"
+      keys: ["ctrl", "s"]
+    expected_delay: 1
+
+  12:
+    description: "Alt+Tab to switch windows"
+    action:
+      type: "hotkey"
+      keys: ["alt", "tab"]
+    expected_delay: 1
+
+  13:
+    description: "Ctrl+Shift+Esc to open task manager"
+    action:
+      type: "hotkey"
+      keys: ["ctrl", "shift", "escape"]
+    expected_delay: 2
+
+  14:
+    description: "Win+D to show desktop"
+    action:
+      type: "hotkey"
+      keys: ["win", "d"]
+    expected_delay: 1
+
+  # === TEXT INPUT ACTIONS ===
+  15:
+    description: "Type player name in text field"
+    find:
+      type: "textbox"
+      text: "Player Name"
+    action:
+      type: "text"
+      text: "Intel_Gaming_Pro"
+      clear_first: true
+      char_delay: 0.05
+    expected_delay: 2
+
+  16:
+    description: "Type multi-line configuration"
+    find:
+      type: "textbox"
+      text: "Config"
+    action:
+      type: "input"
+      text: "fps_max 300\nmat_queue_mode 2\nr_dynamic 1"
+      clear_first: false
+    expected_delay: 1
+
+  17:
+    description: "Type special characters and numbers"
+    find:
+      type: "textbox"
+      text: "Server IP"
+    action:
+      type: "type"
+      text: "192.168.1.100:27015"
+      clear_first: true
+    expected_delay: 1
+
+  # === DRAG AND DROP ACTIONS ===
+  18:
+    description: "Drag slider to adjust graphics quality"
+    find:
+      type: "slider"
+      text: "Quality"
+    action:
+      type: "drag"
+      end_x: 200  # Drag 200 pixels to the right
+      end_y: 0    # Same Y position
+      duration: 1.0
+      button: "left"
+    expected_delay: 1
+
+  19:
+    description: "Drag window to reposition"
+    find:
+      type: "label"
+      text: "Settings Window"
+    action:
+      type: "drag_drop"
+      start_x: 100
+      start_y: 50
+      end_x: 300
+      end_y: 200
+      duration: 1.5
+    expected_delay: 1
+
+  # === SCROLL ACTIONS ===
+  20:
+    description: "Scroll down in settings list"
+    find:
+      type: "list"
+      text: "Options List"
+    action:
+      type: "scroll"
+      direction: "down"
+      clicks: 5
+    expected_delay: 1
+
+  21:
+    description: "Scroll up to see more options"
+    action:
+      type: "scroll"
+      x: 500
+      y: 300
+      direction: "up"
+      clicks: 3
+    expected_delay: 1
+
+  # === WAIT ACTIONS ===
+  22:
+    description: "Simple wait for loading"
+    action:
+      type: "wait"
+      duration: 5
+    expected_delay: 0
+
+  23:
+    description: "Conditional wait for element to appear"
+    action:
+      type: "wait"
+      condition: "element_appears"
+      max_wait: 30
+      check_interval: 2
+    expected_delay: 0
+
+  # === CONDITIONAL ACTIONS ===
+  24:
+    description: "Conditional action based on element presence"
+    find:
+      type: "button"
+      text: "Start Benchmark"
+    action:
+      type: "conditional"
+      condition:
+        element_present: true
+      if_true:
+        type: "click"
+        button: "left"
+      if_false:
+        type: "key"
+        key: "escape"
+    expected_delay: 2
+
+  # === SEQUENCE ACTIONS ===
+  25:
+    description: "Execute sequence of actions for benchmark setup"
+    action:
+      type: "sequence"
+      delay_between: 0.5
+      actions:
+        - type: "click"
+          button: "left"
+          x: 500
+          y: 300
+        - type: "key"
+          key: "tab"
+        - type: "text"
+          text: "High Performance"
+        - type: "key"
+          key: "enter"
+    expected_delay: 3
+
+  # === ADVANCED COMBINATIONS ===
+  26:
+    description: "Complex multi-step benchmark initiation"
+    find:
+      type: "button"
+      text: "Benchmark"
+    action:
+      type: "sequence"
+      actions:
+        - type: "right_click"  # Right-click for context menu
+        - type: "wait"
+          duration: 1
+        - type: "key"
+          key: "down"  # Navigate menu
+        - type: "key"
+          key: "enter"  # Select option
+        - type: "hotkey"
+          keys: ["ctrl", "shift", "b"]  # Hotkey for advanced benchmark
+    verify_success:
+      - type: "label"
+        text: "Benchmark Running"
+    expected_delay: 5
+
+  27:
+    description: "Final benchmark execution with monitoring"
+    action:
+      type: "wait"
+      duration: 120  # 2 minutes benchmark
+    expected_delay: 0
+
+# === OPTIONAL STEPS (Handle popups and interruptions) ===
+optional_steps:
+  # Handle Windows UAC prompt
+  uac_prompt:
+    description: "Handle Windows UAC prompt"
+    trigger:
+      type: "button"
+      text: "Yes"
+      text_match: "exact"
+    action:
+      type: "click"
+      button: "left"
+    priority: 1
+
+  # Handle game crash dialog
+  crash_dialog:
+    description: "Handle game crash dialog"
+    trigger:
+      type: "button"
+      text: "Send Report"
+      text_match: "contains"
+    action:
+      type: "sequence"
+      actions:
+        - type: "click"
+          button: "left"
+        - type: "wait"
+          duration: 2
+        - type: "key"
+          key: "escape"
+    priority: 2
+
+  # Handle DirectX installation prompt
+  directx_prompt:
+    description: "Handle DirectX installation"
+    trigger:
+      type: "button"
+      text: "Install DirectX"
+    action:
+      type: "click"
+      button: "left"
+    priority: 3
+
+  # Handle Windows defender notification
+  defender_notification:
+    description: "Dismiss Windows Defender notification"
+    trigger:
+      type: "button"
+      text: "Dismiss"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+    priority: 4
+
+  # Handle Steam overlay
+  steam_overlay:
+    description: "Close Steam overlay"
+    trigger:
+      type: "label"
+      text: "Steam"
+      text_match: "contains"
+    action:
+      type: "hotkey"
+      keys: ["shift", "tab"]
+    priority: 5
+
+  # Handle generic error dialogs
+  error_dialog:
+    description: "Handle generic error dialogs"
+    trigger:
+      type: "button"
+      text: "OK"
+      text_match: "exact"
+    action:
+      type: "click"
+      button: "left"
+    priority: 10
+
+# === FALLBACK STRATEGIES ===
+fallbacks:
+  # General fallback for any failure
+  general:
+    type: "sequence"
+    actions:
+      - type: "key"
+        key: "escape"
+      - type: "wait"
+        duration: 1
+      - type: "key"
+        key: "escape"
+    expected_delay: 2
+    max_retries: 3
+
+  # Specific fallback for benchmark step
+  benchmark_running:
+    type: "hotkey"
+    keys: ["alt", "f4"]
+    expected_delay: 3
+    max_retries: 5
+
+  # Fallback for stuck UI
+  ui_stuck:
+    type: "sequence"
+    actions:
+      - type: "hotkey"
+        keys: ["ctrl", "alt", "del"]
+      - type: "wait"
+        duration: 2
+      - type: "key"
+        key: "escape"
+    expected_delay: 5
+    max_retries: 2
+
+  # Hardware-specific fallback (for Intel systems)
+  intel_graphics_reset:
+    type: "hotkey"
+    keys: ["ctrl", "shift", "win", "b"]  # Intel graphics reset
+    expected_delay: 10
+    max_retries: 1
+
+# === PERFORMANCE MONITORING ===
+performance_monitoring:
+  enable_cpu_tracking: true
+  enable_memory_tracking: true
+  enable_gpu_tracking: true
+  sample_interval: 5  # seconds
+  log_to_file: true
+
+# === GAME-SPECIFIC SETTINGS ===
+game_specific:
+  engine: "Unreal Engine 5"
+  graphics_api: "DirectX 12"
+  expected_load_time: 45
+  crash_recovery: true
+  
+  # Intel-specific optimizations
+  intel_optimizations:
+    enable_hybrid_scheduling: true
+    prefer_performance_cores: true
+    enable_thread_director: true
+    gpu_scheduling: "hardware"
+
+# === VALIDATION STEPS ===
+validation:
+  pre_benchmark:
+    - description: "Verify game is running"
+      check: "process_exists"
+      process: "game.exe"
+    - description: "Verify resolution"
+      check: "screen_resolution"
+      expected: "1920x1080"
+    - description: "Verify graphics settings"
+      check: "ui_element_present"
+      element: "Ultra Settings"
+
+  post_benchmark:
+    - description: "Check for crash dumps"
+      check: "file_exists"
+      path: "crash_dumps/"
+    - description: "Verify benchmark completion"
+      check: "ui_element_present"
+      element: "Results"
+    - description: "Check FPS results"
+      check: "value_in_range"
+      min_fps: 60
+      max_fps: 300
+
+# === ADVANCED FEATURES ===
+advanced_features:
+  # Multi-monitor support
+  multi_monitor:
+    primary_monitor: 1
+    secondary_actions_monitor: 2
+    
+  # Timing optimization
+  timing:
+    adaptive_delays: true
+    performance_based_timing: true
+    connection_latency_compensation: true
+    
+  # Error recovery
+  error_recovery:
+    screenshot_on_error: true
+    retry_with_different_model: true
+    automatic_fallback_escalation: true
+    
+  # Accessibility
+  accessibility:
+    high_contrast_support: true
+    screen_reader_compatibility: true
+    keyboard_only_navigation: true
+
+# === BENCHMARK RESULTS PROCESSING ===
+results_processing:
+  capture_screenshots: true
+  save_performance_logs: true
+  generate_report: true
+  compare_with_baseline: true
+  
+  # Intel-specific metrics
+  intel_metrics:
+    capture_power_consumption: true
+    monitor_thermal_throttling: true
+    track_hybrid_core_usage: true
+    measure_ai_acceleration: true

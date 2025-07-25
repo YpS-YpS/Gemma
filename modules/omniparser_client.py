@@ -32,8 +32,8 @@ class OmniparserClient:
         self.api_url = api_url
         self.session = requests.Session()
         # Assuming 2560x1600 resolution - adjust as needed for your target resolution
-        self.screen_width = 1920
-        self.screen_height = 1080
+        self.screen_width = 2560
+        self.screen_height = 1600
         logger.info(f"OmniparserClient initialized with API URL: {api_url}")
         
         # Test connection to the API
