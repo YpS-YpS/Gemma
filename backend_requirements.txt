@@ -1,0 +1,14 @@
+Flask
+Flask-SocketIO
+Flask-CORS
+requests
+PyAutoGUI
+Pillow
+pynput
+psutil
+PyYAML
+python-socketio
+eventlet
+APScheduler
+pydantic
+python-dotenv
