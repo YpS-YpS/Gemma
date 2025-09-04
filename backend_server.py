@@ -31,6 +31,11 @@ from modules.annotator import Annotator
 from modules.simple_automation import SimpleAutomation
 from modules.game_launcher import GameLauncher
 
+import sqlite3
+import ipaddress
+import concurrent.futures
+from datetime import datetime, timedelta
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -75,6 +80,22 @@ class AutomationRun:
     end_time: Optional[datetime]
     results: Optional[Dict[str, Any]]
     error_message: Optional[str] = None
+    
+@dataclass
+class SUTStatus:
+    """Enhanced SUT status information with unique ID"""
+    sut_id: str
+    name: str
+    ip: str
+    port: int
+    status: str  # 'online', 'offline', 'busy'
+    capabilities: List[str]
+    last_seen: datetime
+    first_seen: datetime
+    version: str
+    system_info: Dict[str, Any]
+    current_task: Optional[str] = None
+    total_connections: int = 0
 
 class GameBenchmarkServer:
     """Main backend server for game benchmarking automation"""
@@ -89,11 +110,17 @@ class GameBenchmarkServer:
         # Initialize SocketIO
         self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='threading')
         
+        # Add SUT registry
+        self.sut_registry = SUTRegistry()
+        
         # Internal state
-        self.suts: Dict[str, SUTStatus] = {}
+        self.suts: Dict[str, SUTStatus] = {}  # Active SUTs by sut_id
+        self.sut_ip_mapping: Dict[str, str] = {}  # IP to sut_id mapping
         self.game_configs: Dict[str, GameConfig] = {}
         self.active_runs: Dict[str, AutomationRun] = {}
         self.run_history: List[AutomationRun] = []
+        
+        self.load_known_suts()
         
         # Configuration
         self.config_dir = "config/games"
@@ -113,6 +140,36 @@ class GameBenchmarkServer:
         self.start_sut_discovery()
         
         logger.info("Game Benchmark Server initialized")
+        
+    def load_known_suts(self):
+        """Load known SUTs from registry and mark them as offline"""
+        try:
+            known_suts = self.sut_registry.get_all_suts()
+            
+            for sut_data in known_suts:
+                sut = SUTStatus(
+                    sut_id=sut_data['sut_id'],
+                    name=sut_data['name'],
+                    ip=sut_data['ip'],
+                    port=sut_data['port'],
+                    status='offline',  # Start as offline, discovery will update
+                    capabilities=sut_data['capabilities'],
+                    last_seen=datetime.fromisoformat(sut_data['last_seen']) if sut_data['last_seen'] else datetime.now(),
+                    first_seen=datetime.fromisoformat(sut_data['first_seen']) if sut_data['first_seen'] else datetime.now(),
+                    version=sut_data['version'],
+                    system_info=sut_data['system_info'],
+                    total_connections=sut_data['total_connections']
+                )
+                
+                self.suts[sut['sut_id']] = sut
+                self.sut_ip_mapping[sut['ip']] = sut['sut_id']
+            
+            logger.info(f"Loaded {len(known_suts)} known SUTs from registry")
+            
+        except Exception as e:
+            logger.error(f"Error loading known SUTs: {e}")
+
+
     
     def setup_routes(self):
         """Setup REST API routes"""
@@ -270,6 +327,105 @@ class GameBenchmarkServer:
                     return jsonify({'status': 'error', 'error': f'HTTP {response.status_code}'})
             except Exception as e:
                 return jsonify({'status': 'offline', 'error': str(e)})
+            
+        @self.app.route('/api/suts/register', methods=['POST'])
+        def register_sut():
+            """Endpoint for SUTs to register themselves"""
+            try:
+                sut_data = request.get_json()
+                
+                # Validate required fields
+                required_fields = ['sut_id', 'name', 'ip', 'port']
+                for field in required_fields:
+                    if field not in sut_data:
+                        return jsonify({'error': f'Missing required field: {field}'}), 400
+                
+                # Update SUT information
+                self.update_sut_from_discovery(
+                    sut_data['ip'], 
+                    sut_data['port'], 
+                    sut_data
+                )
+                
+                logger.info(f"SUT registered: {sut_data['name']} ({sut_data['sut_id']})")
+                
+                # Emit update
+                self.emit_suts_update()
+                
+                return jsonify({'status': 'success', 'message': 'SUT registered successfully'})
+                
+            except Exception as e:
+                logger.error(f"Error registering SUT: {e}")
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/suts/heartbeat', methods=['POST'])
+        def sut_heartbeat():
+            """Endpoint for SUT heartbeat"""
+            try:
+                heartbeat_data = request.get_json()
+                sut_id = heartbeat_data.get('sut_id')
+                
+                if sut_id in self.suts:
+                    sut = self.suts[sut_id]
+                    sut.last_seen = datetime.now()
+                    sut.status = heartbeat_data.get('status', 'online')
+                    sut.current_task = heartbeat_data.get('current_task')
+                    
+                    return jsonify({'status': 'success'})
+                else:
+                    return jsonify({'error': 'SUT not found'}), 404
+                    
+            except Exception as e:
+                logger.error(f"Error processing heartbeat: {e}")
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/suts/scan', methods=['POST'])
+        def trigger_network_scan():
+            """Manually trigger network scan for SUTs"""
+            try:
+                # Run discovery in background thread to avoid blocking
+                discovery_thread = threading.Thread(
+                    target=self.discover_suts_on_network,
+                    daemon=True
+                )
+                discovery_thread.start()
+                
+                return jsonify({'status': 'success', 'message': 'Network scan initiated'})
+                
+            except Exception as e:
+                logger.error(f"Error triggering network scan: {e}")
+                return jsonify({'error': str(e)}), 500
+
+        @self.app.route('/api/suts/history/<sut_id>', methods=['GET'])
+        def get_sut_history(sut_id):
+            """Get connection history for a specific SUT"""
+            try:
+                conn = sqlite3.connect(self.sut_registry.db_path)
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    SELECT timestamp, status, event_type, details
+                    FROM sut_history 
+                    WHERE sut_id = ?
+                    ORDER BY timestamp DESC
+                    LIMIT 50
+                ''', (sut_id,))
+                
+                history = []
+                for row in cursor.fetchall():
+                    history.append({
+                        'timestamp': row[0],
+                        'status': row[1],
+                        'event_type': row[2],
+                        'details': json.loads(row[3]) if row[3] else {}
+                    })
+                
+                conn.close()
+                return jsonify({'history': history})
+                
+            except Exception as e:
+                logger.error(f"Error getting SUT history: {e}")
+                return jsonify({'error': str(e)}), 500
     
     def setup_socket_handlers(self):
         """Setup WebSocket event handlers"""
@@ -333,30 +489,12 @@ class GameBenchmarkServer:
         logger.info(f"Loaded {len(self.game_configs)} game configurations")
     
     def start_sut_discovery(self):
-        """Start SUT discovery background thread"""
-        self.discovery_thread = threading.Thread(target=self.sut_discovery_loop, daemon=True)
+        """Start enhanced SUT discovery background thread"""
+        self.discovery_thread = threading.Thread(target=self.enhanced_sut_discovery_loop, daemon=True)
         self.discovery_thread.start()
-        logger.info("Started SUT discovery thread")
+        logger.info("Started enhanced SUT discovery thread with network scanning")
     
-    def sut_discovery_loop(self):
-        """Background loop for discovering SUTs"""
-        # Default SUT IPs to check (you can make this configurable)
-        sut_candidates = [
-            "192.168.50.230",
-            "192.168.50.231", 
-            "192.168.1.100",
-            "127.0.0.1"  # localhost for testing
-        ]
-        
-        while not self.stop_discovery.is_set():
-            for ip in sut_candidates:
-                self.check_sut_status(ip, 8080)  # Default port
-            
-            # Emit updates if any changes
-            self.emit_suts_update()
-            
-            # Wait before next discovery cycle
-            self.stop_discovery.wait(10)  # Check every 10 seconds
+    
     
     def check_sut_status(self, ip: str, port: int = 8080):
         """Check status of a specific SUT"""
@@ -543,6 +681,127 @@ class GameBenchmarkServer:
         self.stop_discovery.set()
         if self.discovery_thread:
             self.discovery_thread.join(timeout=5)
+
+class SUTRegistry:
+    """Persistent registry for discovered SUTs"""
+    
+    def __init__(self, db_path="suts_registry.db"):
+        self.db_path = db_path
+        self.init_database()
+    
+    def init_database(self):
+        """Initialize the SUT registry database"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS suts (
+                sut_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                ip TEXT NOT NULL,
+                port INTEGER NOT NULL,
+                version TEXT,
+                system_info TEXT,
+                capabilities TEXT,
+                first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                total_connections INTEGER DEFAULT 1,
+                notes TEXT
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS sut_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sut_id TEXT,
+                ip TEXT,
+                status TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                event_type TEXT,
+                details TEXT,
+                FOREIGN KEY (sut_id) REFERENCES suts (sut_id)
+            )
+        ''')
+        
+        conn.commit()
+        conn.close()
+        logger.info("SUT registry database initialized")
+    
+    def register_sut(self, sut_data):
+        """Register or update a SUT in the registry"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # Check if SUT exists
+        cursor.execute('SELECT sut_id, total_connections FROM suts WHERE sut_id = ?', (sut_data['sut_id'],))
+        existing = cursor.fetchone()
+        
+        if existing:
+            # Update existing SUT
+            cursor.execute('''
+                UPDATE suts SET 
+                    name = ?, ip = ?, port = ?, version = ?, 
+                    system_info = ?, capabilities = ?, last_seen = CURRENT_TIMESTAMP,
+                    total_connections = ?
+                WHERE sut_id = ?
+            ''', (
+                sut_data['name'], sut_data['ip'], sut_data['port'], 
+                sut_data.get('version', ''), json.dumps(sut_data.get('system_info', {})),
+                json.dumps(sut_data.get('capabilities', [])),
+                existing[1] + 1,  # Increment connection count
+                sut_data['sut_id']
+            ))
+        else:
+            # Insert new SUT
+            cursor.execute('''
+                INSERT INTO suts (sut_id, name, ip, port, version, system_info, capabilities)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                sut_data['sut_id'], sut_data['name'], sut_data['ip'], sut_data['port'],
+                sut_data.get('version', ''), json.dumps(sut_data.get('system_info', {})),
+                json.dumps(sut_data.get('capabilities', []))
+            ))
+        
+        # Add to history
+        cursor.execute('''
+            INSERT INTO sut_history (sut_id, ip, status, event_type, details)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (
+            sut_data['sut_id'], sut_data['ip'], 'registered', 'registration',
+            json.dumps(sut_data)
+        ))
+        
+        conn.commit()
+        conn.close()
+    
+    def get_all_suts(self):
+        """Get all SUTs from registry"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT sut_id, name, ip, port, version, system_info, capabilities,
+                   first_seen, last_seen, total_connections
+            FROM suts ORDER BY last_seen DESC
+        ''')
+        
+        results = []
+        for row in cursor.fetchall():
+            results.append({
+                'sut_id': row[0],
+                'name': row[1],
+                'ip': row[2],
+                'port': row[3],
+                'version': row[4],
+                'system_info': json.loads(row[5]) if row[5] else {},
+                'capabilities': json.loads(row[6]) if row[6] else [],
+                'first_seen': row[7],
+                'last_seen': row[8],
+                'total_connections': row[9]
+            })
+        
+        conn.close()
+        return results
 
 def main():
     """Main entry point"""
