@@ -31,6 +31,7 @@ from modules.annotator import Annotator
 from modules.simple_automation import SimpleAutomation
 from modules.game_launcher import GameLauncher
 
+import requests
 import sqlite3
 import ipaddress
 import concurrent.futures
@@ -426,6 +427,35 @@ class GameBenchmarkServer:
             except Exception as e:
                 logger.error(f"Error getting SUT history: {e}")
                 return jsonify({'error': str(e)}), 500
+        
+        # Quick debug method - add this to your backend temporarily:
+        @self.app.route('/api/debug/suts', methods=['GET'])
+        def debug_suts():
+            """Debug endpoint to see SUT data structure"""
+            debug_data = {}
+            for sut_id, sut in self.suts.items():
+                debug_data[sut_id] = {
+                    'sut_id': getattr(sut, 'sut_id', 'MISSING'),
+                    'name': getattr(sut, 'name', 'MISSING'),
+                    'ip': getattr(sut, 'ip', 'MISSING'),
+                    'port': getattr(sut, 'port', 'MISSING'),
+                    'status': getattr(sut, 'status', 'MISSING'),
+                    'type': type(sut).__name__,
+                    'attributes': dir(sut)
+                }
+            
+            return jsonify({
+                'suts_count': len(self.suts),
+                'suts_data': debug_data,
+                'suts_keys': list(self.suts.keys())
+            })
+        
+        @self.app.route('/api/test/emit', methods=['POST'])
+        def test_emit():
+            """Test emitting SUT updates"""
+            logger.info("Manual emit test triggered")
+            self.emit_suts_update()
+            return jsonify({'status': 'success', 'message': 'Emit triggered'})
     
     def setup_socket_handlers(self):
         """Setup WebSocket event handlers"""
@@ -433,20 +463,44 @@ class GameBenchmarkServer:
         @self.socketio.on('connect')
         def handle_connect():
             logger.info(f"Client connected: {request.sid}")
-            join_room('updates')
             
-            # Send initial data
-            emit('suts_update', {ip: asdict(sut) for ip, sut in self.suts.items()})
-            emit('games_update', {name: asdict(config) for name, config in self.game_configs.items()})
-            emit('runs_update', {
-                'active': {run_id: asdict(run) for run_id, run in self.active_runs.items()},
-                'history': [asdict(run) for run in self.run_history[-10:]]
-            })
+            # Send initial data immediately upon connection
+            try:
+                # Send SUTs data with enhanced format
+                suts_data = {}
+                for sut_id, sut in self.suts.items():
+                    suts_data[sut_id] = {
+                        'sut_id': sut.sut_id,
+                        'name': sut.name,
+                        'ip': sut.ip,
+                        'port': sut.port,
+                        'status': sut.status,
+                        'capabilities': sut.capabilities,
+                        'last_seen': sut.last_seen.isoformat() if sut.last_seen else None,
+                        'first_seen': sut.first_seen.isoformat() if sut.first_seen else None,
+                        'current_task': sut.current_task,
+                        'version': sut.version,
+                        'system_info': sut.system_info,
+                        'total_connections': sut.total_connections
+                    }
+                
+                emit('suts_update', suts_data)
+                emit('games_update', {name: asdict(config) for name, config in self.game_configs.items()})
+                emit('runs_update', {
+                    'active': {run_id: asdict(run) for run_id, run in self.active_runs.items()},
+                    'history': [asdict(run) for run in self.run_history[-10:]]
+                })
+                
+                logger.info(f"Sent initial data to client {request.sid}: {len(suts_data)} SUTs, {len(self.game_configs)} games")
+                
+            except Exception as e:
+                logger.error(f"Error sending initial data to client: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
         
         @self.socketio.on('disconnect')
         def handle_disconnect():
             logger.info(f"Client disconnected: {request.sid}")
-            leave_room('updates')
     
     def load_game_configurations(self):
         """Load game configurations from YAML files"""
@@ -487,6 +541,238 @@ class GameBenchmarkServer:
                 logger.error(f"Failed to load config {yaml_file}: {str(e)}")
         
         logger.info(f"Loaded {len(self.game_configs)} game configurations")
+
+    def enhanced_sut_discovery_loop(self):
+        """Enhanced SUT discovery with network scanning"""
+        while not self.stop_discovery.is_set():
+            try:
+                # Perform network scan
+                self.discover_suts_on_network()
+                
+                # Check status of known SUTs that weren't recently seen
+                current_time = datetime.now()
+                for sut_id, sut in list(self.suts.items()):
+                    time_since_last_seen = (current_time - sut.last_seen).total_seconds()
+                    
+                    if time_since_last_seen > 60:  # 60 seconds timeout
+                        if sut.status == 'online':
+                            sut.status = 'offline'
+                            logger.info(f"SUT {sut.name} ({sut.ip}) marked as offline - last seen {int(time_since_last_seen)}s ago")
+                            
+                            # Add to history
+                            try:
+                                conn = sqlite3.connect(self.sut_registry.db_path)
+                                cursor = conn.cursor()
+                                cursor.execute('''
+                                    INSERT INTO sut_history (sut_id, ip, status, event_type, details)
+                                    VALUES (?, ?, ?, ?, ?)
+                                ''', (
+                                    sut_id, sut.ip, 'offline', 'timeout',
+                                    json.dumps({"timeout_seconds": int(time_since_last_seen)})
+                                ))
+                                conn.commit()
+                                conn.close()
+                            except Exception as e:
+                                logger.error(f"Error adding timeout event to history: {e}")
+                
+                # Emit updates if any changes occurred
+                self.emit_suts_update()
+                
+                # Wait before next discovery cycle (30 seconds)
+                self.stop_discovery.wait(30)
+                
+            except Exception as e:
+                logger.error(f"Error in enhanced discovery loop: {e}")
+                # Wait shorter time on error before retrying
+                self.stop_discovery.wait(10)
+
+    def discover_suts_on_network(self):
+        """Scan network for SUTs"""
+        try:
+            # Get local network range
+            import socket
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            s.close()
+            
+            # Determine network range (assume /24 subnet)
+            network = ipaddress.IPv4Network(f"{local_ip}/24", strict=False)
+            
+            logger.debug(f"Scanning network {network} for SUTs...")
+            
+            def check_sut_at_ip(ip_str):
+                """Check if there's a SUT at the given IP"""
+                # Skip our own IP
+                if ip_str == local_ip:
+                    return None
+                    
+                for port in [8080, 8081, 8082, 8083]:  # Common SUT ports
+                    try:
+                        response = requests.get(
+                            f"http://{ip_str}:{port}/status", 
+                            timeout=2
+                        )
+                        
+                        if response.status_code == 200:
+                            data = response.json()
+                            if (data.get('status') == 'running' and 
+                                'sut_id' in data and 
+                                data.get('capabilities')):  # Validate it's actually a SUT
+                                return ip_str, port, data
+                    except requests.exceptions.RequestException:
+                        # Expected for most IPs that don't have SUTs
+                        continue
+                    except Exception as e:
+                        logger.debug(f"Unexpected error checking {ip_str}:{port} - {e}")
+                        continue
+                return None
+            
+            # Scan network in parallel with limited workers to avoid overwhelming network
+            discovered_suts = []
+            with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+                # Submit all IP checks
+                futures = [executor.submit(check_sut_at_ip, str(ip)) for ip in network.hosts()]
+                
+                # Collect results as they complete
+                for future in concurrent.futures.as_completed(futures, timeout=45):
+                    try:
+                        result = future.result()
+                        if result:
+                            ip, port, sut_data = result
+                            discovered_suts.append((ip, port, sut_data))
+                            logger.info(f"Discovered SUT: {sut_data.get('name', 'Unknown')} at {ip}:{port}")
+                    except concurrent.futures.TimeoutError:
+                        logger.warning("Some network scans timed out")
+                        break
+                    except Exception as e:
+                        logger.debug(f"Error processing scan result: {e}")
+                        continue
+            
+            # Update SUT status for discovered SUTs
+            for ip, port, sut_data in discovered_suts:
+                self.update_sut_from_discovery(ip, port, sut_data)
+            
+            if discovered_suts:
+                logger.info(f"Network scan complete. Found {len(discovered_suts)} active SUTs")
+            else:
+                logger.debug("Network scan complete. No active SUTs found")
+            
+        except Exception as e:
+            logger.error(f"Error during network discovery: {e}")
+
+    def update_sut_from_discovery(self, ip, port, sut_data):
+        """Update SUT information from discovery data"""
+        try:
+            sut_id = sut_data['sut_id']
+            current_time = datetime.now()
+            
+            # Register in persistent registry
+            self.sut_registry.register_sut(sut_data)
+            
+            # Update in-memory tracking
+            if sut_id in self.suts:
+                # Update existing SUT
+                sut = self.suts[sut_id]
+                
+                # Check if IP changed
+                ip_changed = sut.ip != ip
+                if ip_changed:
+                    logger.info(f"SUT {sut.name} IP changed from {sut.ip} to {ip}")
+                    # Update IP mapping
+                    if sut.ip in self.sut_ip_mapping:
+                        del self.sut_ip_mapping[sut.ip]
+                    self.sut_ip_mapping[ip] = sut_id
+                
+                # Update SUT data
+                sut.ip = ip
+                sut.port = port
+                was_offline = sut.status == 'offline'
+                sut.status = 'online'
+                sut.last_seen = current_time
+                sut.version = sut_data.get('version', '')
+                sut.capabilities = sut_data.get('capabilities', [])
+                sut.system_info = sut_data.get('system_info', {})
+                
+                # Log status change
+                if was_offline:
+                    logger.info(f"SUT {sut.name} ({ip}) came back online")
+                    
+            else:
+                # Create new SUT
+                sut = SUTStatus(
+                    sut_id=sut_id,
+                    name=sut_data.get('name', f"SUT-{sut_id[:8]}"),
+                    ip=ip,
+                    port=port,
+                    status='online',
+                    capabilities=sut_data.get('capabilities', []),
+                    last_seen=current_time,
+                    first_seen=current_time,
+                    version=sut_data.get('version', ''),
+                    system_info=sut_data.get('system_info', {}),
+                    total_connections=1
+                )
+                self.suts[sut_id] = sut
+                logger.info(f"New SUT discovered: {sut.name} ({ip}:{port})")
+            
+            # Update IP mapping
+            self.sut_ip_mapping[ip] = sut_id
+            
+            # Add discovery event to history
+            try:
+                conn = sqlite3.connect(self.sut_registry.db_path)
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO sut_history (sut_id, ip, status, event_type, details)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (
+                    sut_id, ip, 'online', 'discovery',
+                    json.dumps({
+                        "discovery_method": "network_scan",
+                        "port": port,
+                        "version": sut_data.get('version', ''),
+                        "capabilities_count": len(sut_data.get('capabilities', []))
+                    })
+                ))
+                conn.commit()
+                conn.close()
+            except Exception as e:
+                logger.error(f"Error adding discovery event to history: {e}")
+
+            logger.info(f"SUT {sut_data.get('name', 'Unknown')} updated, emitting update")
+            self.emit_suts_update()
+            
+        except Exception as e:
+            logger.error(f"Error updating SUT from discovery: {e}")
+
+    def emit_suts_update(self):
+        """Emit SUT status updates via WebSocket"""
+        try:
+            suts_data = {}
+            for sut_id, sut in self.suts.items():
+                suts_data[sut_id] = {
+                    'sut_id': sut.sut_id,
+                    'name': sut.name,
+                    'ip': sut.ip,
+                    'port': sut.port,
+                    'status': sut.status,
+                    'capabilities': sut.capabilities,
+                    'last_seen': sut.last_seen.isoformat() if sut.last_seen else None,
+                    'first_seen': sut.first_seen.isoformat() if sut.first_seen else None,
+                    'current_task': sut.current_task,
+                    'version': sut.version,
+                    'system_info': sut.system_info,
+                    'total_connections': sut.total_connections
+                }
+            
+            logger.info(f"Emitting SUT update with {len(suts_data)} SUTs: {list(suts_data.keys())}")
+            self.socketio.emit('suts_update', suts_data)  # Remove room='updates' for now
+        
+        except Exception as e:
+            logger.error(f"Error emitting SUT updates: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
     
     def start_sut_discovery(self):
         """Start enhanced SUT discovery background thread"""
@@ -641,11 +927,6 @@ class GameBenchmarkServer:
             
             self.emit_runs_update()
             self.emit_suts_update()
-    
-    def emit_suts_update(self):
-        """Emit SUT status updates via WebSocket"""
-        suts_data = {ip: asdict(sut) for ip, sut in self.suts.items()}
-        self.socketio.emit('suts_update', suts_data, room='updates')
     
     def emit_games_update(self):
         """Emit game configurations updates via WebSocket"""
