@@ -21,12 +21,6 @@ from pynput.mouse import Button, Listener as MouseListener
 from pynput.keyboard import Key, Listener as KeyboardListener
 import ctypes
 from ctypes import wintypes
-import socket
-import uuid
-import platform
-import requests
-import threading
-from datetime import datetime
 
 # Configure logging
 logging.basicConfig(
@@ -48,14 +42,6 @@ game_lock = threading.Lock()
 current_game_process_name = None
 mouse_controller = mouse.Controller()
 keyboard_controller = keyboard.Controller()
-
-# Add these global variables after your existing globals
-SUT_ID = str(uuid.getnode())  # Use MAC address as unique ID
-SUT_NAME = f"{platform.node()}-{platform.system()}"
-SUT_VERSION = "2.1.0"
-BACKEND_SERVERS = []  # Will be populated by discovery
-REGISTRATION_INTERVAL = 30  # seconds
-HEARTBEAT_INTERVAL = 10  # seconds
 
 # Configure PyAutoGUI for enhanced control
 pyautogui.FAILSAFE = False  # Disable failsafe for automation
@@ -789,177 +775,6 @@ def handle_system_action(data):
     except Exception as e:
         logger.error(f"System action failed: {str(e)}")
         return jsonify({"status": "error", "error": str(e)}), 500
-    
-def get_local_ip():
-    """Get the local IP address of this machine."""
-    try:
-        # Create a socket to find local IP
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
-        s.close()
-        return local_ip
-    except Exception:
-        return "127.0.0.1"
-
-def get_system_info():
-    """Get detailed system information."""
-    try:
-        return {
-            "hostname": platform.node(),
-            "platform": platform.platform(),
-            "processor": platform.processor(),
-            "machine": platform.machine(),
-            "python_version": platform.python_version(),
-            "total_memory": psutil.virtual_memory().total,
-            "cpu_count": psutil.cpu_count(),
-            "boot_time": psutil.boot_time()
-        }
-    except Exception as e:
-        logger.error(f"Error getting system info: {e}")
-        return {}
-
-def discover_backend_servers():
-    """Discover backend servers on the network."""
-    try:
-        local_ip = get_local_ip()
-        network_base = ".".join(local_ip.split(".")[:-1])
-        
-        backend_servers = []
-        
-        # Check common ports where backend might be running
-        backend_ports = [5000, 8000, 3000]
-        
-        for i in range(1, 255):  # Scan entire subnet
-            for port in backend_ports:
-                ip = f"{network_base}.{i}"
-                if ip == local_ip:  # Skip self
-                    continue
-                    
-                try:
-                    # Quick check for backend server
-                    response = requests.get(
-                        f"http://{ip}:{port}/api/status", 
-                        timeout=1
-                    )
-                    if response.status_code == 200:
-                        data = response.json()
-                        if data.get('status') == 'running':
-                            backend_servers.append({
-                                'ip': ip,
-                                'port': port,
-                                'url': f"http://{ip}:{port}"
-                            })
-                            logger.info(f"Discovered backend server: {ip}:{port}")
-                except:
-                    continue
-        
-        return backend_servers
-    except Exception as e:
-        logger.error(f"Error discovering backend servers: {e}")
-        return []
-
-def register_with_backend(backend_url):
-    """Register this SUT with a backend server."""
-    try:
-        local_ip = get_local_ip()
-        sut_data = {
-            "sut_id": SUT_ID,
-            "name": SUT_NAME,
-            "ip": local_ip,
-            "port": app.config.get('PORT', 8080),
-            "version": SUT_VERSION,
-            "capabilities": [
-                "screenshot",
-                "click_actions", 
-                "keyboard_input",
-                "game_launch",
-                "process_management",
-                "performance_monitoring",
-                "enhanced_input_control"
-            ],
-            "system_info": get_system_info(),
-            "timestamp": datetime.now().isoformat()
-        }
-        
-        response = requests.post(
-            f"{backend_url}/api/suts/register",
-            json=sut_data,
-            timeout=5
-        )
-        
-        if response.status_code == 200:
-            logger.info(f"Successfully registered with backend: {backend_url}")
-            return True
-        else:
-            logger.warning(f"Registration failed with {backend_url}: {response.status_code}")
-            return False
-            
-    except Exception as e:
-        logger.error(f"Error registering with backend {backend_url}: {e}")
-        return False
-
-def send_heartbeat(backend_url):
-    """Send heartbeat to backend server."""
-    try:
-        heartbeat_data = {
-            "sut_id": SUT_ID,
-            "timestamp": datetime.now().isoformat(),
-            "status": "online",
-            "current_task": "idle",  # You can update this based on current activity
-            "quick_metrics": {
-                "cpu_percent": psutil.cpu_percent(interval=0.1),
-                "memory_percent": psutil.virtual_memory().percent
-            }
-        }
-        
-        response = requests.post(
-            f"{backend_url}/api/suts/heartbeat",
-            json=heartbeat_data,
-            timeout=3
-        )
-        
-        return response.status_code == 200
-        
-    except Exception as e:
-        logger.debug(f"Heartbeat failed for {backend_url}: {e}")
-        return False
-
-def background_discovery_and_registration():
-    """Background thread for discovery and registration."""
-    global BACKEND_SERVERS
-    
-    while True:
-        try:
-            # Discover backend servers periodically
-            discovered = discover_backend_servers()
-            
-            # Update backend servers list
-            BACKEND_SERVERS = discovered
-            
-            # Register with all discovered backends
-            for backend in BACKEND_SERVERS:
-                register_with_backend(backend['url'])
-            
-            # Wait before next discovery cycle
-            time.sleep(REGISTRATION_INTERVAL)
-            
-        except Exception as e:
-            logger.error(f"Error in discovery/registration loop: {e}")
-            time.sleep(10)
-
-def background_heartbeat():
-    """Background thread for sending heartbeats."""
-    while True:
-        try:
-            for backend in BACKEND_SERVERS:
-                send_heartbeat(backend['url'])
-            
-            time.sleep(HEARTBEAT_INTERVAL)
-            
-        except Exception as e:
-            logger.error(f"Error in heartbeat loop: {e}")
-            time.sleep(5)
 
 @app.route('/performance', methods=['GET'])
 def get_performance_metrics():
@@ -1024,92 +839,20 @@ def health_check():
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
         return jsonify({"status": "error", "error": str(e)}), 500
-    
-@app.route('/status', methods=['GET'])
-def status():
-    """Enhanced status endpoint with unique SUT identification."""
-    try:
-        local_ip = get_local_ip()
-        
-        status_data = {
-            "status": "running",
-            "sut_id": SUT_ID,
-            "name": SUT_NAME,
-            "version": SUT_VERSION,
-            "ip": local_ip,
-            "port": app.config.get('PORT', 8080),
-            "capabilities": [
-                "screenshot",
-                "click_actions", 
-                "keyboard_input",
-                "game_launch",
-                "process_management",
-                "performance_monitoring",
-                "enhanced_input_control"
-            ],
-            "system_info": get_system_info(),
-            "current_game": current_game_process_name if current_game_process_name else None,
-            "registered_backends": len(BACKEND_SERVERS),
-            "timestamp": datetime.now().isoformat()
-        }
-        
-        return jsonify(status_data)
-        
-    except Exception as e:
-        logger.error(f"Status check failed: {str(e)}")
-        return jsonify({"status": "error", "error": str(e)}), 500
-    
-# Add this new endpoint for backend discovery
-@app.route('/discover', methods=['GET'])
-def discover_info():
-    """Endpoint for backend servers to discover this SUT."""
-    try:
-        return status()  # Just call the status function
-    except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
 
 if __name__ == '__main__':
     import argparse
     
-    parser = argparse.ArgumentParser(description='Enhanced SUT Service v2.1 - Auto-Discovery Support')
+    parser = argparse.ArgumentParser(description='Enhanced SUT Service v2.0 - Complete Gaming Automation Support')
     parser.add_argument('--port', type=int, default=8080, help='Port to run the service on')
     parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind to')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
-    parser.add_argument('--no-auto-discovery', action='store_true', help='Disable automatic backend discovery')
     args = parser.parse_args()
     
-    # Store port in app config for access in other functions
-    app.config['PORT'] = args.port
-    
     logger.info("=" * 60)
-    logger.info("Enhanced SUT Service v2.1 - Auto-Discovery Gaming Platform")
+    logger.info("Enhanced SUT Service v2.0 - Gaming Automation Platform")
     logger.info("=" * 60)
-    logger.info(f"SUT ID: {SUT_ID}")
-    logger.info(f"SUT Name: {SUT_NAME}")
-    logger.info(f"Local IP: {get_local_ip()}")
     logger.info(f"Starting service on {args.host}:{args.port}")
-    
-    if not args.no_auto_discovery:
-        logger.info("Starting auto-discovery and registration...")
-        
-        # Start background discovery and registration
-        discovery_thread = threading.Thread(
-            target=background_discovery_and_registration, 
-            daemon=True
-        )
-        discovery_thread.start()
-        
-        # Start background heartbeat  
-        heartbeat_thread = threading.Thread(
-            target=background_heartbeat, 
-            daemon=True
-        )
-        heartbeat_thread.start()
-        
-        logger.info("Auto-discovery enabled - SUT will automatically register with backend servers")
-    else:
-        logger.info("Auto-discovery disabled")
-    
     logger.info("Supported Features:")
     logger.info("   All click types (left/right/middle/double/triple)")
     logger.info("   Drag & drop operations with smooth movement")
@@ -1121,7 +864,167 @@ if __name__ == '__main__':
     logger.info("   Window management and system controls")
     logger.info("   Performance metrics and health monitoring")
     logger.info("   Gaming-optimized input handling")
-    logger.info("   Auto-discovery and registration")
     logger.info("=" * 60)
     
     app.run(host=args.host, port=args.port, debug=args.debug)
+
+# """
+# SUT Service - Run this on the System Under Test (SUT)
+# This service handles requests from the ARL development PC.
+# """
+
+# import os
+# import time
+# import json
+# import subprocess
+# import threading
+# from flask import Flask, request, jsonify, send_file
+# import pyautogui
+# from io import BytesIO
+# import logging
+
+# # Configure logging
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+#     handlers=[
+#         logging.FileHandler("sut_service.log"),
+#         logging.StreamHandler()
+#     ]
+# )
+# logger = logging.getLogger(__name__)
+
+# # Initialize Flask app
+# app = Flask(__name__)
+
+# # Global variables
+# game_process = None
+# game_lock = threading.Lock()
+
+# @app.route('/status', methods=['GET'])
+# def status():
+#     """Endpoint to check if the service is running."""
+#     return jsonify({"status": "running"})
+
+# @app.route('/screenshot', methods=['GET'])
+# def screenshot():
+#     """Capture and return a screenshot."""
+#     try:
+#         # Capture the entire screen
+#         screenshot = pyautogui.screenshot()
+        
+#         # Save to a bytes buffer
+#         img_buffer = BytesIO()
+#         screenshot.save(img_buffer, format='PNG')
+#         img_buffer.seek(0)
+        
+#         logger.info("Screenshot captured")
+#         return send_file(img_buffer, mimetype='image/png')
+#     except Exception as e:
+#         logger.error(f"Error capturing screenshot: {str(e)}")
+#         return jsonify({"status": "error", "error": str(e)}), 500
+
+# @app.route('/launch', methods=['POST'])
+# def launch_game():
+#     """Launch a game."""
+#     global game_process
+    
+#     try:
+#         data = request.json
+#         game_path = data.get('path', '')
+        
+#         if not game_path or not os.path.exists(game_path):
+#             logger.error(f"Game path not found: {game_path}")
+#             return jsonify({"status": "error", "error": "Game executable not found"}), 404
+        
+#         with game_lock:
+#             # Terminate existing game if running
+#             if game_process and game_process.poll() is None:
+#                 logger.info("Terminating existing game process")
+#                 game_process.terminate()
+#                 game_process.wait(timeout=5)
+            
+#             # Launch the game
+#             logger.info(f"Launching game: {game_path}")
+#             game_process = subprocess.Popen(game_path)
+            
+#             # Wait a moment to check if process started successfully
+#             time.sleep(1)
+#             if game_process.poll() is not None:
+#                 logger.error("Game process failed to start")
+#                 return jsonify({"status": "error", "error": "Game process failed to start"}), 500
+        
+#         return jsonify({"status": "success", "pid": game_process.pid})
+#     except Exception as e:
+#         logger.error(f"Error launching game: {str(e)}")
+#         return jsonify({"status": "error", "error": str(e)}), 500
+
+# @app.route('/action', methods=['POST'])
+# def perform_action():
+#     """Perform an action (click, key press, etc.)."""
+#     try:
+#         data = request.json
+#         action_type = data.get('type', '')
+        
+#         if action_type == 'click':
+#             x = data.get('x', 0)
+#             y = data.get('y', 0)
+            
+#             # Get optional parameters for movement customization
+#             move_duration = data.get('move_duration', 0.5)  # Default 0.5 seconds for smooth movement
+#             click_delay = data.get('click_delay', 1.0)      # Default 1 second delay before clicking
+            
+#             logger.info(f"Moving smoothly to ({x}, {y}) over {move_duration}s")
+            
+#             # Move to the coordinate smoothly
+#             pyautogui.moveTo(x=x, y=y, duration=move_duration)
+            
+#             # Wait for the specified delay
+#             logger.info(f"Waiting {click_delay}s before clicking")
+#             time.sleep(click_delay)
+            
+#             # Perform the click at current position
+#             logger.info(f"Clicking at ({x}, {y})")
+#             pyautogui.click()
+            
+#             return jsonify({"status": "success"})
+            
+#         elif action_type == 'key':
+#             key = data.get('key', '')
+#             logger.info(f"Pressing key: {key}")
+#             pyautogui.press(key)
+#             return jsonify({"status": "success"})
+            
+#         elif action_type == 'wait':
+#             duration = data.get('duration', 1)
+#             logger.info(f"Waiting for {duration} seconds")
+#             time.sleep(duration)
+#             return jsonify({"status": "success"})
+            
+#         elif action_type == 'terminate_game':
+#             with game_lock:
+#                 if game_process and game_process.poll() is None:
+#                     logger.info("Terminating game")
+#                     game_process.terminate()
+#                     game_process.wait(timeout=5)
+#                     return jsonify({"status": "success"})
+#                 else:
+#                     return jsonify({"status": "success", "message": "No running game to terminate"})
+#         else:
+#             logger.error(f"Unknown action type: {action_type}")
+#             return jsonify({"status": "error", "error": f"Unknown action type: {action_type}"}), 400
+            
+#     except Exception as e:
+#         logger.error(f"Error performing action: {str(e)}")
+#         return jsonify({"status": "error", "error": str(e)}), 500
+
+# if __name__ == '__main__':
+#     import argparse
+    
+#     parser = argparse.ArgumentParser(description='SUT Service')
+#     parser.add_argument('--port', type=int, default=8080, help='Port to run the service on')
+#     parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind to')
+#     args = parser.parse_args()
+    
+#     logger.info(f"Starting SUT Service on {args.host}:{args.port}")
+#     app.run(host=args.host, port=args.port)
