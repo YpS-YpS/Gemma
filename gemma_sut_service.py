@@ -131,10 +131,22 @@ def terminate_process_by_name(process_name):
 
 @app.route('/status', methods=['GET'])
 def status():
-    """Enhanced status endpoint with capabilities."""
+    """Enhanced status endpoint with capabilities and Gemma identification."""
+    import socket
+    import platform
+    import uuid
+    
+    # Generate or get unique device ID
+    device_id = f"gemma_sut_{platform.node()}_{uuid.getnode()}"
+    
     return jsonify({
         "status": "running",
         "version": "2.0",
+        "gemma_sut_signature": "gemma_sut_v2",  # Unique identifier for Gemma SUTs
+        "device_id": device_id,
+        "hostname": platform.node(),
+        "platform": platform.system(),
+        "architecture": platform.machine(),
         "capabilities": [
             "basic_clicks", "advanced_clicks", "drag_drop", "scroll",
             "hotkeys", "text_input", "sequences", "process_management",
