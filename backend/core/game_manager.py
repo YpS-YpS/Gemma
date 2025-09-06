@@ -196,4 +196,11 @@ class GameConfigManager:
     
     def to_dict(self) -> Dict[str, Dict[str, Any]]:
         """Convert all games to dictionary format for API/WebSocket"""
-        return {name: asdict(config) for name, config in self.games.items()}
+        result = {}
+        for name, config in self.games.items():
+            config_dict = asdict(config)
+            # Convert datetime to ISO string for JSON serialization
+            if config_dict.get('last_modified'):
+                config_dict['last_modified'] = config.last_modified.isoformat()
+            result[name] = config_dict
+        return result
