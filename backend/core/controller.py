@@ -131,7 +131,7 @@ class BackendController:
         try:
             self.start()
             logger.info(f"Starting server on {host}:{port} (debug={debug})")
-            self.socketio.run(self.app, host=host, port=port, debug=debug)
+            self.socketio.run(self.app, host=host, port=port, debug=debug, allow_unsafe_werkzeug=True)
         except KeyboardInterrupt:
             logger.info("Server interrupted by user")
         except Exception as e:

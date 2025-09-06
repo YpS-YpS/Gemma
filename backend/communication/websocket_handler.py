@@ -4,8 +4,10 @@ WebSocket handler for real-time frontend communication
 
 import logging
 import json
+import time
 from typing import Dict, List, Any, Optional
-from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect, request
+from flask import request
+from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
 from dataclasses import asdict
 
 from ..core.events import event_bus, EventType, Event
@@ -50,7 +52,7 @@ class WebSocketHandler:
             
             # Store client info
             self.connected_clients[client_id] = {
-                "connected_at": self.socketio.server.manager.get_session(client_id)["created"],
+                "connected_at": time.time(),
                 "subscriptions": set()
             }
             
@@ -63,7 +65,7 @@ class WebSocketHandler:
             emit('connection_status', {
                 'status': 'connected',
                 'client_id': client_id,
-                'timestamp': self.socketio.server.manager.get_session(client_id)["created"]
+                'timestamp': time.time()
             })
             
         @self.socketio.on('disconnect')
@@ -128,7 +130,7 @@ class WebSocketHandler:
         @self.socketio.on('ping')
         def handle_ping():
             """Handle ping from client"""
-            emit('pong', {'timestamp': self.socketio.server.manager.get_session(request.sid)["created"]})
+            emit('pong', {'timestamp': time.time()})
             
     def _send_initial_data(self, client_id: str):
         """Send initial data to newly connected client"""
@@ -153,7 +155,7 @@ class WebSocketHandler:
             'devices': [self._serialize_device(device) for device in devices],
             'total_count': len(devices),
             'online_count': len([d for d in devices if d.is_online]),
-            'timestamp': self.socketio.server.manager.clock()
+            'timestamp': time.time()
         }
         
     def _get_discovery_status(self) -> Dict[str, Any]:
@@ -161,7 +163,7 @@ class WebSocketHandler:
         stats = self.registry.get_device_stats()
         return {
             'discovery_active': True,  # Will be set by controller
-            'last_scan': self.socketio.server.manager.clock(),
+            'last_scan': time.time(),
             **stats
         }
         
