@@ -170,6 +170,36 @@ class APIRoutes:
                 logger.error(f"Error removing discovery target: {e}")
                 return jsonify({"error": str(e)}), 500
                 
+        @app.route('/api/discovery/network-info', methods=['GET'])
+        def get_network_info():
+            """Get comprehensive network information"""
+            try:
+                from ..discovery.network_utils import NetworkDiscovery
+                network_info = NetworkDiscovery.get_network_info()
+                return jsonify(network_info)
+            except Exception as e:
+                logger.error(f"Error getting network info: {e}")
+                return jsonify({"error": str(e)}), 500
+                
+        @app.route('/api/discovery/rediscover-networks', methods=['POST'])
+        def rediscover_networks():
+            """Force rediscovery of network ranges and restart scanning"""
+            try:
+                # Reinitialize target IPs with fresh network discovery
+                self.discovery_service._initialize_target_ips()
+                
+                # Force an immediate scan
+                stats = self.discovery_service.force_discovery_scan()
+                
+                return jsonify({
+                    "status": "success", 
+                    "message": "Network rediscovery completed",
+                    "stats": stats
+                })
+            except Exception as e:
+                logger.error(f"Error rediscovering networks: {e}")
+                return jsonify({"error": str(e)}), 500
+                
         # SUT communication
         @app.route('/api/sut/<device_id>/status', methods=['GET'])
         def get_sut_status(device_id):

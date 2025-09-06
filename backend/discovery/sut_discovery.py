@@ -14,6 +14,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 try:
     from .device_registry import DeviceRegistry, SUTDevice, SUTStatus
+    from .network_utils import NetworkDiscovery
     from ..core.config import BackendConfig
     from ..core.events import event_bus, EventType
 except ImportError:
@@ -22,6 +23,7 @@ except ImportError:
     import os
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
     from discovery.device_registry import DeviceRegistry, SUTDevice, SUTStatus
+    from discovery.network_utils import NetworkDiscovery
     from core.config import BackendConfig
     from core.events import event_bus, EventType
 
@@ -47,21 +49,35 @@ class SUTDiscoveryService:
         logger.info(f"Discovery interval: {config.discovery_interval}s")
         
     def _initialize_target_ips(self):
-        """Initialize the list of target IPs to scan"""
+        """Initialize the list of target IPs to scan using dynamic network discovery"""
         self.target_ips.clear()
         
-        for network_range in self.config.network_ranges:
+        # Get network ranges dynamically based on host interfaces
+        if hasattr(self.config, 'network_ranges') and self.config.network_ranges:
+            # Use configured ranges if explicitly set
+            network_ranges = self.config.network_ranges
+            logger.info("Using configured network ranges")
+        else:
+            # Auto-discover network ranges
+            network_ranges = NetworkDiscovery.get_local_network_ranges()
+            logger.info("Auto-discovered network ranges from local interfaces")
+        
+        host_ip = NetworkDiscovery.get_host_ip()
+        logger.info(f"Host IP detected: {host_ip}")
+        
+        for network_range in network_ranges:
             try:
                 network = ipaddress.ip_network(network_range, strict=False)
                 if network.num_addresses <= 256:  # Only scan small networks
                     for ip in network.hosts():
                         self.target_ips.add(str(ip))
+                    logger.info(f"Added network range: {network_range} ({network.num_addresses-2} hosts)")
                 else:
-                    logger.warning(f"Skipping large network: {network_range}")
+                    logger.warning(f"Skipping large network: {network_range} ({network.num_addresses} addresses)")
             except ValueError as e:
                 logger.error(f"Invalid network range {network_range}: {e}")
                 
-        logger.info(f"Initialized {len(self.target_ips)} target IPs for scanning")
+        logger.info(f"Initialized {len(self.target_ips)} target IPs for scanning across {len(network_ranges)} networks")
         
     def start(self):
         """Start the discovery service"""

@@ -25,8 +25,8 @@ class BackendConfig:
     sut_identifier_key: str = "gemma_sut_signature"
     sut_identifier_value: str = "gemma_sut_v2"
     
-    # Network settings
-    network_ranges: List[str] = None  # Will be auto-detected
+    # Network settings - Leave None for auto-discovery
+    network_ranges: List[str] = None  # Auto-detected from local interfaces if None
     
     # Omniparser settings
     omniparser_url: str = "http://localhost:8000"
@@ -36,13 +36,10 @@ class BackendConfig:
     log_file: str = "backend.log"
     
     def __post_init__(self):
-        """Initialize default network ranges if not provided"""
-        if self.network_ranges is None:
-            self.network_ranges = [
-                "192.168.1.0/24",
-                "192.168.50.0/24", 
-                "127.0.0.1/32"
-            ]
+        """Post-initialization setup"""
+        # Network ranges are now dynamically discovered in the discovery service
+        # This allows the system to work on any network without configuration
+        pass
 
 
 class ConfigManager:
