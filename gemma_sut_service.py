@@ -253,7 +253,7 @@ def launch_game():
                 response_data["game_process_pid"] = actual_process.pid
                 response_data["game_process_name"] = actual_process.name()
                 response_data["game_process_status"] = actual_process.status()
-                logger.info(f"✓ Game launched successfully: {actual_process.name()} (PID: {actual_process.pid})")
+                logger.info(f"[OK] Game launched successfully: {actual_process.name()} (PID: {actual_process.pid})")
             else:
                 # This is now a warning, not an error - the game might still be starting
                 logger.warning(f"Game process '{current_game_process_name}' not found within {max_wait_time} seconds")

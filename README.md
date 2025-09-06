@@ -6,13 +6,13 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    🎮 KATANA GAME AUTOMATOR                 │
+│                    [GAME] KATANA GAME AUTOMATOR                 │
 │                                                             │
 │  Automated UI Navigation • AI Vision • Remote Benchmarking │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 🎯 Overview
+## [NEXT] Overview
 
 Katana represents a sophisticated automation framework that transforms how we approach game user interface navigation and benchmarking. Think of it as your intelligent assistant that can "see" game interfaces just like a human would, but with the precision and consistency that only automated systems can provide.
 
@@ -33,7 +33,7 @@ The system operates on a client-server architecture where your development machi
 
 This architectural approach provides several advantages. First, it keeps the computational load of AI processing separate from the game execution environment, preventing any interference with benchmark results. Second, it allows you to control multiple test systems from a single development machine. Third, it enables you to use different AI models and configurations without needing to install them on every test system.
 
-## 🏗️ System Architecture
+## [CONFIG] System Architecture
 
 Understanding Katana's architecture helps you appreciate how each component contributes to the overall automation capability. The system follows a layered design pattern, where each layer has specific responsibilities and can be modified independently.
 
@@ -115,7 +115,7 @@ Understanding the differences between vision models is crucial for choosing the 
 
 **Omniparser** takes a different approach entirely. Rather than trying to understand everything on screen, it focuses specifically on interactive elements – the buttons, menus, and controls that users actually click on. This targeted approach makes it extremely fast and precise, perfect for production environments where speed and reliability are paramount.
 
-## 🚀 Quick Start Guide
+## [START] Quick Start Guide
 
 Let's get you up and running with Katana. I'll guide you through each step, explaining why each component is necessary and how it contributes to the overall system functionality.
 
@@ -208,7 +208,7 @@ python gui_app.py
 
 The GUI automatically detects your configuration and provides visual feedback about the status of each component. This makes it easy to verify that everything is working correctly before beginning automation tasks.
 
-## 🎮 Game Configuration
+## [GAME] Game Configuration
 
 Game configuration is where Katana's flexibility truly shines. The system supports two distinct approaches to automation, each designed for different use cases and complexity levels.
 
@@ -221,7 +221,7 @@ Understanding these two approaches helps you choose the right tool for your spec
 │                 CONFIGURATION APPROACHES                    │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│ 🎯 Step-Based (SimpleAutomation)                           │
+│ [NEXT] Step-Based (SimpleAutomation)                           │
 │ • Linear workflow execution                                │
 │ • Easy to understand and modify                            │
 │ • Perfect for straightforward game navigation              │
@@ -306,7 +306,7 @@ transitions:
 
 The state machine approach defines what each state looks like (through `required_elements`) and how to transition between states. This allows the system to understand where it is at any moment and determine the appropriate next action.
 
-## 🖥️ User Interface Guide
+## [DEVICE] User Interface Guide
 
 The Katana GUI is designed to provide comprehensive control over the automation process while maintaining clarity and ease of use. Understanding the interface layout helps you efficiently manage your automation workflows.
 
@@ -353,22 +353,22 @@ The GUI incorporates several intelligent features designed to reduce setup time 
 │                      GUI CAPABILITIES                       │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│ 🔧 Configuration Management                                 │
+│ [CONFIG] Configuration Management                                 │
 │ • Auto-detect config type (step vs. state machine)         │
 │ • Auto-populate game paths from config metadata            │
 │ • Visual validation of settings                            │
 │                                                             │
-│ 🎮 Vision Model Selection                                   │
+│ [GAME] Vision Model Selection                                   │
 │ • Switch between Gemma, Qwen VL, and Omniparser           │
 │ • Test connections before execution                        │
 │ • Model-specific optimization settings                     │
 │                                                             │
-│ 📊 Real-time Monitoring                                     │
+│ [STATS] Real-time Monitoring                                     │
 │ • Live execution logs with color coding                    │
 │ • Progress tracking through game states                    │
 │ • Screenshot preview and annotation viewing                │
 │                                                             │
-│ 🗂️ Run Management                                          │
+│ [CONFIG] Run Management                                          │
 │ • Automatic run directory creation                         │
 │ • Organized screenshot and log storage                     │
 │ • Easy access to latest results                            │
@@ -427,7 +427,7 @@ Each vision model has unique characteristics that make it suitable for different
 
 **Omniparser Processing** takes a fundamentally different approach by focusing exclusively on interactive elements. Rather than trying to understand everything in the interface, Omniparser uses computer vision algorithms to identify only the elements that users can actually interact with – buttons, menus, text fields, and similar controls. This targeted approach makes it extremely fast and eliminates false positives from decorative interface elements. The trade-off is that it might miss unconventional interactive elements that don't follow standard visual patterns.
 
-## 🔧 Advanced Configuration
+## [CONFIG] Advanced Configuration
 
 As you become more comfortable with Katana, you'll want to fine-tune your configurations for better accuracy and reliability. Advanced configuration options give you precise control over how the system behaves in different scenarios.
 
@@ -468,12 +468,12 @@ Understanding the different UI element types helps you create more specific and 
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │ 🔘 button    - Clickable buttons and controls               │
-│ 🏷️  label     - Text labels and headers                     │
-│ 🖼️  icon      - Graphical icons and symbols                │
+│ [LABEL]  label     - Text labels and headers                     │
+│ [ICON]  icon      - Graphical icons and symbols                │
 │ 📝 textbox   - Input fields and text areas                 │
-│ ☑️  checkbox  - Checkboxes and toggles                     │
-│ 🎚️  slider    - Range sliders and progress bars            │
-│ 📋 menu      - Dropdown menus and lists                    │
+│ [OK]  checkbox  - Checkboxes and toggles                     │
+│ [CONFIG]  slider    - Range sliders and progress bars            │
+│ [NEXT] menu      - Dropdown menus and lists                    │
 │ ❓ any       - Match any element type                      │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
@@ -526,29 +526,29 @@ Understanding the project organization helps you navigate the codebase and know 
 katana-game-automator/
 ├── 📁 modules/
 │   ├── 🧠 decision_engine.py      # State machine automation
-│   ├── 🎯 simple_automation.py    # Step-based automation  
-│   ├── 👁️ gemma_client.py         # Gemma LLM vision client
-│   ├── 👁️ qwen_client.py          # Qwen VL vision client
-│   ├── 👁️ omniparser_client.py    # Omniparser client
-│   ├── 🌐 network.py              # SUT communication
+│   ├── [NEXT] simple_automation.py    # Step-based automation  
+│   ├── [SEARCH] gemma_client.py         # Gemma LLM vision client
+│   ├── [SEARCH] qwen_client.py          # Qwen VL vision client
+│   ├── [SEARCH] omniparser_client.py    # Omniparser client
+│   ├── [WEB] network.py              # SUT communication
 │   ├── 📸 screenshot.py           # Screenshot management
 │   ├── 🎨 annotator.py            # Image annotation
-│   ├── 🎮 game_launcher.py        # Game launching
-│   └── ⚙️ config_parser.py        # YAML configuration
+│   ├── [GAME] game_launcher.py        # Game launching
+│   └── [CONFIG] config_parser.py        # YAML configuration
 ├── 📁 config/
 │   └── 📁 games/
-│       ├── 🎯 cs2_simple.yaml     # Step-based CS2 config
+│       ├── [NEXT] cs2_simple.yaml     # Step-based CS2 config
 │       ├── 🔄 cs2_benchmark.yaml  # State machine CS2 config
-│       └── 📋 game_template.yaml  # Template for new games
+│       └── [NEXT] game_template.yaml  # Template for new games
 ├── 📁 logs/
 │   └── 📁 [game_name]/
 │       └── 📁 run_[timestamp]/
 │           ├── 📁 screenshots/    # Raw screenshots
 │           ├── 📁 annotated/      # UI-annotated images
 │           └── 📄 automation.log  # Execution logs
-├── 🖥️ gui_app.py                  # Main GUI application
+├── [DEVICE] gui_app.py                  # Main GUI application
 ├── ⚡ main.py                     # Command-line interface
-├── 🔧 gemma_sut_service.py       # SUT server service
+├── [CONFIG] gemma_sut_service.py       # SUT server service
 └── 📖 README.md                  # This documentation
 ```
 
@@ -558,7 +558,7 @@ The **config directory** stores your game automation definitions. The games subd
 
 The **logs directory** automatically organizes output from each automation run. Each game gets its own subdirectory, and within that, each run gets a timestamped folder containing all screenshots, annotated images, and log files from that specific execution.
 
-## 🎯 Usage Examples
+## [NEXT] Usage Examples
 
 Let me show you practical examples of how to use Katana in different scenarios. These examples demonstrate both command-line and configuration-based approaches.
 
@@ -634,7 +634,7 @@ Run your configuration and use the annotated screenshots to see what the vision 
 
 Once basic navigation works, add verification steps to ensure each action was successful, and implement fallback strategies for common failure scenarios.
 
-## 🔍 Troubleshooting Guide
+## [SEARCH] Troubleshooting Guide
 
 Even with careful configuration, automation systems can encounter issues. Understanding common problems and their solutions helps you quickly resolve issues and maintain reliable automation.
 
@@ -646,28 +646,28 @@ Even with careful configuration, automation systems can encounter issues. Unders
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │ 🚫 Issue: SUT Connection Failed                            │
-│ ✅ Solution:                                               │
+│ [OK] Solution:                                               │
 │    • Verify SUT service is running                        │
 │    • Check firewall settings                              │
 │    • Confirm IP address and port                          │
 │    • Test with ping/telnet                                │
 │                                                             │
 │ 🚫 Issue: Vision Model Not Detecting Elements              │
-│ ✅ Solution:                                               │
+│ [OK] Solution:                                               │
 │    • Check screenshot quality and resolution              │
 │    • Adjust confidence thresholds                         │
 │    • Try different text matching strategies               │
 │    • Switch to more appropriate vision model              │
 │                                                             │
 │ 🚫 Issue: Game Launch Failures                            │
-│ ✅ Solution:                                               │
+│ [OK] Solution:                                               │
 │    • Verify game path on SUT                              │
 │    • Check game installation and dependencies             │
 │    • Ensure sufficient privileges                         │
 │    • Test manual game launch first                        │
 │                                                             │
 │ 🚫 Issue: Automation Gets Stuck                           │
-│ ✅ Solution:                                               │
+│ [OK] Solution:                                               │
 │    • Review state definitions for accuracy                │
 │    • Implement timeout and fallback strategies            │
 │    • Check for UI changes or updates                      │
@@ -707,7 +707,7 @@ The annotated screenshots that Katana automatically generates are invaluable for
 
 Use these annotated screenshots to verify that the vision model is detecting the elements you expect, identify elements that might be causing false matches, adjust coordinate calculations for clicking accuracy, and optimize text matching strategies for better reliability.
 
-## 🚀 Performance Optimization
+## [START] Performance Optimization
 
 As your automation becomes more complex or you scale to multiple systems, performance optimization becomes important for maintaining efficiency and reliability.
 
@@ -748,7 +748,7 @@ network_settings = {
 
 Tune these settings based on your network environment. Local network connections can use shorter timeouts, while remote connections might need longer timeouts to account for latency and potential packet loss.
 
-## 🧪 Testing and Validation
+## [TEST] Testing and Validation
 
 Reliable automation requires systematic testing and validation. Develop test procedures to ensure your configurations work consistently across different conditions.
 
@@ -826,7 +826,7 @@ To integrate new vision models into Katana:
 
 The existing client implementations provide good templates for different approaches – HTTP API communication, local model execution, and specialized service integration.
 
-## 📊 Gaming Performance Analysis
+## [STATS] Gaming Performance Analysis
 
 As someone deeply involved in gaming performance optimization, you'll appreciate how Katana can automate the collection of performance metrics across different hardware configurations. The system's modular architecture makes it particularly well-suited for integration with Intel's performance analysis tools.
 

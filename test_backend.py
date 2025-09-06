@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def test_backend_initialization():
     """Test basic backend initialization"""
-    print("🧪 Testing Backend Initialization...")
+    print("[TEST] Testing Backend Initialization...")
     
     config = ConfigManager.load_config()
     # Use a different port for testing
@@ -25,24 +25,24 @@ def test_backend_initialization():
     
     controller = BackendController(config)
     
-    print("✅ Backend controller created successfully")
+    print("[OK] Backend controller created successfully")
     return controller
 
 
 def test_discovery_service(controller):
     """Test discovery service"""
-    print("\n🔍 Testing Discovery Service...")
+    print("\n[SEARCH] Testing Discovery Service...")
     
     # Start services
     controller.start()
     
     # Wait a bit for discovery to run
-    print("⏳ Waiting for discovery scan...")
+    print("[WAIT] Waiting for discovery scan...")
     time.sleep(8)
     
     # Check discovered devices
     devices = controller.get_all_devices()
-    print(f"📱 Discovered {len(devices)} devices:")
+    print(f"[DEVICE] Discovered {len(devices)} devices:")
     
     for device in devices:
         print(f"  - {device.unique_id} at {device.ip}:{device.port} ({device.status.value})")
@@ -56,22 +56,22 @@ def test_discovery_service(controller):
 
 def test_websocket_system(controller):
     """Test WebSocket system"""
-    print("\n🌐 Testing WebSocket System...")
+    print("\n[WEB] Testing WebSocket System...")
     
     client_count = controller.websocket_handler.get_connected_clients_count()
-    print(f"📡 Connected WebSocket clients: {client_count}")
+    print(f"[ONLINE] Connected WebSocket clients: {client_count}")
     
     # Test broadcasting a message
     test_message = {"test": "message", "timestamp": time.time()}
     controller.websocket_handler.broadcast_message("test_event", test_message)
-    print("📤 Broadcast test message sent")
+    print("[SEND] Broadcast test message sent")
     
     return True
 
 
 def test_system_status(controller):
     """Test system status"""
-    print("\n📊 Testing System Status...")
+    print("\n[STATS] Testing System Status...")
     
     status = controller.get_system_status()
     
@@ -98,7 +98,7 @@ def test_system_status(controller):
 
 def main():
     """Run the backend test suite"""
-    print("🚀 Starting Modular Backend Test Suite")
+    print("[START] Starting Modular Backend Test Suite")
     print("=" * 50)
     
     controller = None
@@ -117,12 +117,12 @@ def main():
         test_system_status(controller)
         
         print("\n" + "=" * 50)
-        print("🎉 All tests completed!")
+        print("[SUCCESS] All tests completed!")
         
         if has_devices:
-            print("✅ Discovery is working - SUTs found!")
+            print("[OK] Discovery is working - SUTs found!")
         else:
-            print("⚠️  No SUTs discovered - make sure gemma_sut_service.py is running")
+            print("[WARN] No SUTs discovered - make sure gemma_sut_service.py is running")
             
         print("\nTo test the full system:")
         print("1. Run 'python gemma_sut_service.py' on SUT machines")
@@ -130,16 +130,16 @@ def main():
         print("3. Connect a frontend to ws://localhost:5000")
         
     except KeyboardInterrupt:
-        print("\n🛑 Test interrupted by user")
+        print("\n[STOP] Test interrupted by user")
     except Exception as e:
-        print(f"\n❌ Test failed: {e}")
+        print(f"\n[FAIL] Test failed: {e}")
         import traceback
         traceback.print_exc()
     finally:
         if controller:
-            print("\n🔧 Cleaning up...")
+            print("\n[CLEANUP] Cleaning up...")
             controller.stop()
-            print("✅ Cleanup complete")
+            print("[OK] Cleanup complete")
 
 
 if __name__ == '__main__':

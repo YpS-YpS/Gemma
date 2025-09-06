@@ -16,7 +16,7 @@ from discovery.device_registry import DeviceRegistry, SUTDevice, SUTStatus
 
 def simulate_sut_discovery():
     """Simulate SUTs being discovered on the network"""
-    print("🔍 Simulating SUT Discovery...")
+    print("[SEARCH] Simulating SUT Discovery...")
     
     config = ConfigManager.load_config()
     registry = DeviceRegistry()
@@ -41,7 +41,7 @@ def simulate_sut_discovery():
             ],
             hostname=sut_info["hostname"]
         )
-        print(f"📱 Discovered SUT: {device.hostname} ({device.ip}) - {len(device.capabilities)} capabilities")
+        print(f"[DEVICE] Discovered SUT: {device.hostname} ({device.ip}) - {len(device.capabilities)} capabilities")
     
     # Start discovery threads
     threads = []
@@ -55,13 +55,13 @@ def simulate_sut_discovery():
     for i in range(6):
         time.sleep(1)
         stats = registry.get_device_stats()
-        print(f"⏱️  T+{i+1}s: {stats['online_devices']}/{len(sut_data)} SUTs online")
+        print(f"[TIME] T+{i+1}s: {stats['online_devices']}/{len(sut_data)} SUTs online")
     
     # Wait for all discoveries to complete
     for thread in threads:
         thread.join()
     
-    print("\n📊 Final Discovery Results:")
+    print("\n[STATS] Final Discovery Results:")
     devices = registry.get_all_devices()
     for device in devices:
         print(f"  • {device.hostname} ({device.unique_id})")
@@ -75,7 +75,7 @@ def simulate_sut_discovery():
 
 def simulate_real_time_events(registry):
     """Simulate real-time events and status changes"""
-    print("🔔 Simulating Real-time Events...")
+    print("[EVENT] Simulating Real-time Events...")
     
     event_bus = EventBus()
     received_events = []
@@ -83,7 +83,7 @@ def simulate_real_time_events(registry):
     def event_handler(event):
         received_events.append(event)
         timestamp = event.timestamp.strftime("%H:%M:%S")
-        print(f"  📨 [{timestamp}] {event.event_type.value}: {event.data.get('device_id', 'N/A')}")
+        print(f"  [MSG] [{timestamp}] {event.event_type.value}: {event.data.get('device_id', 'N/A')}")
     
     # Subscribe to all event types
     for event_type in EventType:
@@ -94,7 +94,7 @@ def simulate_real_time_events(registry):
     if devices:
         test_device = devices[0]
         
-        print(f"\n🎮 Simulating automation on {test_device.hostname}...")
+        print(f"\n[GAME] Simulating automation on {test_device.hostname}...")
         
         # Simulate automation starting
         registry.set_device_busy(test_device.unique_id, "Running Cyberpunk 2077 benchmark")
@@ -122,14 +122,14 @@ def simulate_real_time_events(registry):
         time.sleep(1)
         
         # Simulate device going offline and coming back
-        print(f"\n📴 Simulating {test_device.hostname} going offline...")
+        print(f"\n[OFFLINE] Simulating {test_device.hostname} going offline...")
         registry.update_device_ping_fail(test_device.unique_id)
         registry.update_device_ping_fail(test_device.unique_id)
         registry.update_device_ping_fail(test_device.unique_id)  # This should mark it offline
         
         time.sleep(2)
         
-        print(f"📡 Simulating {test_device.hostname} coming back online...")
+        print(f"[ONLINE] Simulating {test_device.hostname} coming back online...")
         registry.register_device(
             ip=test_device.ip,
             port=test_device.port,
@@ -140,12 +140,12 @@ def simulate_real_time_events(registry):
     
     time.sleep(1)
     
-    print(f"\n📈 Event Summary: {len(received_events)} events processed")
+    print(f"\n[SUMMARY] Event Summary: {len(received_events)} events processed")
     return received_events
 
 def simulate_frontend_communication():
     """Simulate what the frontend would receive"""
-    print("\n🌐 Simulating Frontend Communication...")
+    print("\n[WEB] Simulating Frontend Communication...")
     
     print("WebSocket Messages the Frontend Would Receive:")
     print("-" * 45)
@@ -169,7 +169,7 @@ def simulate_frontend_communication():
         }
     }
     
-    print("📨 initial_devices:")
+    print("[MSG] initial_devices:")
     print(f"  {initial_data['data']['online_count']} SUTs online")
     
     # Simulate real-time updates
@@ -184,17 +184,17 @@ def simulate_frontend_communication():
     
     for update in updates:
         time.sleep(0.5)
-        print(f"📨 {update['event']}: {update['type']}")
+        print(f"[MSG] {update['event']}: {update['type']}")
         if 'device' in update:
             print(f"   Device: {update['device']}")
         if 'avg_fps' in update:
             print(f"   Result: {update['avg_fps']} FPS")
     
-    print("\n✅ Frontend would receive instant updates without polling!")
+    print("\n[OK] Frontend would receive instant updates without polling!")
 
 def main():
     """Run the demonstration"""
-    print("🚀 Gemma Backend Architecture Demonstration")
+    print("[START] Gemma Backend Architecture Demonstration")
     print("=" * 60)
     print("Showing key features of the new modular backend system")
     print("=" * 60)
@@ -209,9 +209,9 @@ def main():
     simulate_frontend_communication()
     
     print("\n" + "=" * 60)
-    print("🎉 Demonstration Complete!")
+    print("[SUCCESS] Demonstration Complete!")
     print("=" * 60)
-    print("✅ Key Features Demonstrated:")
+    print("[OK] Key Features Demonstrated:")
     print("  • Fast SUT discovery (2-second intervals)")
     print("  • Unique device identification")
     print("  • Real-time event system")
@@ -219,12 +219,12 @@ def main():
     print("  • Device state management")
     print("  • Automatic online/offline detection")
     
-    print(f"\n📊 System Stats:")
+    print(f"\n[STATS] System Stats:")
     print(f"  • {len(registry.get_all_devices())} SUTs discovered")
     print(f"  • {len(events)} real-time events processed")
     print(f"  • 0 server restarts required")
     
-    print("\n🔧 To run the full system:")
+    print("\n[CONFIG] To run the full system:")
     print("  1. Install dependencies: sudo apt install python3-pip && pip3 install flask flask-socketio requests")
     print("  2. Start backend: python3 run_backend.py")
     print("  3. Start SUTs: python3 gemma_sut_service.py")

@@ -176,13 +176,13 @@ class BackendController:
     def _test_omniparser_connection(self):
         """Test connection to Omniparser on startup"""
         if self.omniparser_client.test_connection():
-            logger.info("✓ Omniparser connection successful")
+            logger.info("[OK] Omniparser connection successful")
             event_bus.emit(EventType.OMNIPARSER_STATUS_CHANGED, {
                 "status": "online",
                 "url": self.config.omniparser_url
             })
         else:
-            logger.warning("✗ Omniparser connection failed")
+            logger.warning("[FAIL] Omniparser connection failed")
             event_bus.emit(EventType.OMNIPARSER_STATUS_CHANGED, {
                 "status": "offline",
                 "url": self.config.omniparser_url

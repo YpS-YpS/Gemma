@@ -1,6 +1,6 @@
 # Gemma Backend v2.0 - Modular Communication Platform
 
-## 🚀 Overview
+## [START] Overview
 
 This is the new modular backend system for Gemma SUT communication platform that provides:
 - **Fast SUT discovery** (2-second intervals)
@@ -9,7 +9,7 @@ This is the new modular backend system for Gemma SUT communication platform that
 - **Unified controller** managing all communications
 - **Zero-restart deployment** - SUTs appear instantly when online
 
-## ✅ **DELIVERED FEATURES**
+## [OK] **DELIVERED FEATURES**
 
 ### **1. Robust SUT Discovery**
 - Scans network every 2 seconds for SUTs
@@ -38,7 +38,7 @@ This is the new modular backend system for Gemma SUT communication platform that
 - Full action support (clicks, hotkeys, automation)
 - Platform information and capabilities
 
-## 🏃‍♂️ **Quick Start**
+## [START] **Quick Start**
 
 ### **Prerequisites**
 ```bash
@@ -65,7 +65,7 @@ python3 simple_test.py           # Basic functionality test
 python3 demo_backend_features.py  # Full feature demonstration
 ```
 
-## 📡 **API Endpoints**
+## [ONLINE] **API Endpoints**
 
 ### **System Status**
 - `GET /api/status` - Comprehensive system status
@@ -86,7 +86,7 @@ python3 demo_backend_features.py  # Full feature demonstration
 - `GET /api/omniparser/status` - Omniparser status
 - `POST /api/omniparser/analyze` - Analyze screenshots
 
-## 🌐 **WebSocket Events**
+## [WEB] **WebSocket Events**
 
 ### **Frontend Receives:**
 - `initial_devices` - Initial device list on connect
@@ -99,7 +99,7 @@ python3 demo_backend_features.py  # Full feature demonstration
 - `request_device_list` - Request current device list
 - `ping` - Keepalive ping
 
-## 🔧 **Configuration**
+## [CONFIG] **Configuration**
 
 Environment variables or modify `backend/core/config.py`:
 ```bash
@@ -111,7 +111,7 @@ SUT_PORT=8080
 OMNIPARSER_URL=http://localhost:8000
 ```
 
-## 🎯 **Key Benefits**
+## [NEXT] **Key Benefits**
 
 ### **For Developers:**
 - Modular, testable architecture
@@ -131,15 +131,15 @@ OMNIPARSER_URL=http://localhost:8000
 - **WebSocket efficiency** - push updates vs polling
 - **Scalable design** - handles multiple SUTs and frontends
 
-## 📊 **Performance Metrics**
+## [STATS] **Performance Metrics**
 
 From demonstration:
-- ✅ 3 SUTs discovered in 5 seconds
-- ✅ 2 real-time events processed instantly
-- ✅ 0 server restarts required
-- ✅ WebSocket updates < 100ms latency
+- [OK] 3 SUTs discovered in 5 seconds
+- [OK] 2 real-time events processed instantly
+- [OK] 0 server restarts required
+- [OK] WebSocket updates < 100ms latency
 
-## 🐛 **Troubleshooting**
+## [FAIL] **Troubleshooting**
 
 ### **No SUTs Discovered:**
 1. Check SUT service is running: `python3 gemma_sut_service.py`
@@ -157,7 +157,7 @@ From demonstration:
 2. Check Python path in scripts
 3. Run basic test: `python3 simple_test.py`
 
-## 🔄 **Migration from Old System**
+## [CONFIG] **Migration from Old System**
 
 The new system is designed to **replace** `backend_server.py` with these improvements:
 - **Modular structure** vs monolithic file
@@ -166,17 +166,17 @@ The new system is designed to **replace** `backend_server.py` with these improve
 - **Unique IDs** vs IP-based identification
 - **Event-driven** vs status polling
 
-## 🎉 **Success Criteria - ACHIEVED**
+## [SUCCESS] **Success Criteria - ACHIEVED**
 
-✅ **Fast discovery** - 2-second network scanning  
-✅ **Unique identification** - `gemma_sut_signature` + device IDs  
-✅ **Real-time updates** - WebSocket push notifications  
-✅ **Unified controller** - orchestrates all communications  
-✅ **No restarts needed** - hot-plug device detection  
-✅ **Modular architecture** - separate concerns, testable  
-✅ **Comprehensive API** - all operations covered  
+[OK] **Fast discovery** - 2-second network scanning  
+[OK] **Unique identification** - `gemma_sut_signature` + device IDs  
+[OK] **Real-time updates** - WebSocket push notifications  
+[OK] **Unified controller** - orchestrates all communications  
+[OK] **No restarts needed** - hot-plug device detection  
+[OK] **Modular architecture** - separate concerns, testable  
+[OK] **Comprehensive API** - all operations covered  
 
-## 📞 **Support**
+## [MSG] **Support**
 
 The system is fully implemented and tested. All core functionality works without external dependencies as demonstrated by the test suite.
 

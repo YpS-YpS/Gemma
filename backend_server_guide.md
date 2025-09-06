@@ -343,12 +343,12 @@ Your existing logs and configurations should work as-is:
 
 ### Feature Parity
 The web interface provides all GUI functionality:
-- ✅ SUT connection management
-- ✅ Game configuration selection
-- ✅ Vision model selection (configured in backend)
-- ✅ Real-time progress monitoring
-- ✅ Run history and results
-- ✅ Screenshot and log access
+- [OK] SUT connection management
+- [OK] Game configuration selection
+- [OK] Vision model selection (configured in backend)
+- [OK] Real-time progress monitoring
+- [OK] Run history and results
+- [OK] Screenshot and log access
 
 ### Additional Web Benefits
 - Multi-user access
