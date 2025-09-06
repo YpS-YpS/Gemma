@@ -5,7 +5,7 @@ WebSocket handler for real-time frontend communication
 import logging
 import json
 from typing import Dict, List, Any, Optional
-from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
+from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect, request
 from dataclasses import asdict
 
 from ..core.events import event_bus, EventType, Event
@@ -45,7 +45,7 @@ class WebSocketHandler:
         
         @self.socketio.on('connect')
         def handle_connect(auth=None):
-            client_id = self.socketio.request.sid
+            client_id = request.sid
             logger.info(f"Frontend client connected: {client_id}")
             
             # Store client info
@@ -68,7 +68,7 @@ class WebSocketHandler:
             
         @self.socketio.on('disconnect')
         def handle_disconnect():
-            client_id = self.socketio.request.sid
+            client_id = request.sid
             logger.info(f"Frontend client disconnected: {client_id}")
             
             # Clean up client data
@@ -78,7 +78,7 @@ class WebSocketHandler:
         @self.socketio.on('subscribe_to_device')
         def handle_device_subscription(data):
             """Subscribe to specific device updates"""
-            client_id = self.socketio.request.sid
+            client_id = request.sid
             device_id = data.get('device_id')
             
             if device_id and client_id in self.connected_clients:
@@ -95,7 +95,7 @@ class WebSocketHandler:
         @self.socketio.on('unsubscribe_from_device')
         def handle_device_unsubscription(data):
             """Unsubscribe from specific device updates"""
-            client_id = self.socketio.request.sid
+            client_id = request.sid
             device_id = data.get('device_id')
             
             if device_id and client_id in self.connected_clients:
@@ -128,7 +128,7 @@ class WebSocketHandler:
         @self.socketio.on('ping')
         def handle_ping():
             """Handle ping from client"""
-            emit('pong', {'timestamp': self.socketio.server.manager.get_session(self.socketio.request.sid)["created"]})
+            emit('pong', {'timestamp': self.socketio.server.manager.get_session(request.sid)["created"]})
             
     def _send_initial_data(self, client_id: str):
         """Send initial data to newly connected client"""
