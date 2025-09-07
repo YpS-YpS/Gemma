@@ -12,6 +12,7 @@ from dataclasses import asdict
 
 from ..core.events import event_bus, EventType, Event
 from ..discovery.device_registry import DeviceRegistry, SUTDevice
+from ..core.game_manager import GameConfigManager
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +20,10 @@ logger = logging.getLogger(__name__)
 class WebSocketHandler:
     """Handles WebSocket connections and real-time updates for frontend"""
     
-    def __init__(self, socketio: SocketIO, device_registry: DeviceRegistry):
+    def __init__(self, socketio: SocketIO, device_registry: DeviceRegistry, game_manager: GameConfigManager = None):
         self.socketio = socketio
         self.registry = device_registry
+        self.game_manager = game_manager
         self.connected_clients: Dict[str, Dict[str, Any]] = {}
         
         # Subscribe to events
@@ -143,6 +145,11 @@ class WebSocketHandler:
             discovery_status = self._get_discovery_status()
             self.socketio.emit('discovery_status', discovery_status, room=client_id)
             
+            # Send game configurations
+            if self.game_manager:
+                games_data = self._get_games_data()
+                self.socketio.emit('games_update', games_data, room=client_id)
+            
             logger.debug(f"Sent initial data to client {client_id}")
             
         except Exception as e:
@@ -166,6 +173,12 @@ class WebSocketHandler:
             'last_scan': time.time(),
             **stats
         }
+        
+    def _get_games_data(self) -> Dict[str, Any]:
+        """Get serialized games data"""
+        if not self.game_manager:
+            return {}
+        return self.game_manager.to_dict()
         
     def _serialize_device(self, device: SUTDevice) -> Dict[str, Any]:
         """Serialize device for JSON transmission"""

@@ -18,6 +18,7 @@ from ..communication.websocket_handler import WebSocketHandler
 from ..communication.sut_client import SUTClient
 from ..communication.omniparser_client import OmniparserClient
 from ..api.routes import APIRoutes
+from .game_manager import GameConfigManager
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,8 @@ class BackendController:
         # Initialize core components
         self.device_registry = DeviceRegistry(offline_timeout=30)
         self.discovery_service = SUTDiscoveryService(config, self.device_registry)
-        self.websocket_handler = WebSocketHandler(self.socketio, self.device_registry)
+        self.game_manager = GameConfigManager()
+        self.websocket_handler = WebSocketHandler(self.socketio, self.device_registry, self.game_manager)
         
         # Initialize communication clients
         self.sut_client = SUTClient(timeout=config.discovery_timeout)
@@ -61,7 +63,8 @@ class BackendController:
             self.discovery_service,
             self.sut_client,
             self.omniparser_client,
-            self.websocket_handler
+            self.websocket_handler,
+            self.game_manager
         )
         
         # Register API routes with Flask app

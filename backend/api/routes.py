@@ -15,12 +15,13 @@ logger = logging.getLogger(__name__)
 class APIRoutes:
     """API routes handler"""
     
-    def __init__(self, device_registry, discovery_service, sut_client, omniparser_client, websocket_handler):
+    def __init__(self, device_registry, discovery_service, sut_client, omniparser_client, websocket_handler, game_manager=None):
         self.device_registry = device_registry
         self.discovery_service = discovery_service
         self.sut_client = sut_client
         self.omniparser_client = omniparser_client
         self.websocket_handler = websocket_handler
+        self.game_manager = game_manager
         
     def register_routes(self, app):
         """Register all API routes with Flask app"""
@@ -402,4 +403,65 @@ class APIRoutes:
                 })
             except Exception as e:
                 logger.error(f"Error getting WebSocket clients: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        # Game configuration management
+        @app.route('/api/games', methods=['GET'])
+        def get_games():
+            """Get all game configurations"""
+            try:
+                if not self.game_manager:
+                    return jsonify({"games": {}})
+                
+                games = self.game_manager.to_dict()
+                return jsonify({"games": games})
+            except Exception as e:
+                logger.error(f"Error getting games: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @app.route('/api/games/<game_name>', methods=['GET'])
+        def get_game(game_name):
+            """Get specific game configuration"""
+            try:
+                if not self.game_manager:
+                    return jsonify({"error": "Game manager not available"}), 500
+                
+                game = self.game_manager.get_game(game_name)
+                if not game:
+                    return jsonify({"error": f"Game '{game_name}' not found"}), 404
+                
+                return jsonify({"game": game.__dict__})
+            except Exception as e:
+                logger.error(f"Error getting game {game_name}: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @app.route('/api/games/reload', methods=['POST'])
+        def reload_games():
+            """Reload game configurations from disk"""
+            try:
+                if not self.game_manager:
+                    return jsonify({"error": "Game manager not available"}), 500
+                
+                stats = self.game_manager.reload_configurations()
+                
+                # Emit updated games to WebSocket clients
+                games_data = self.game_manager.to_dict()
+                self.websocket_handler.broadcast_message('games_update', games_data)
+                
+                return jsonify(stats)
+            except Exception as e:
+                logger.error(f"Error reloading games: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @app.route('/api/games/stats', methods=['GET'])
+        def get_game_stats():
+            """Get game statistics"""
+            try:
+                if not self.game_manager:
+                    return jsonify({"error": "Game manager not available"}), 500
+                
+                stats = self.game_manager.get_game_stats()
+                return jsonify(stats)
+            except Exception as e:
+                logger.error(f"Error getting game stats: {e}")
                 return jsonify({"error": str(e)}), 500
