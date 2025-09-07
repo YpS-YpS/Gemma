@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Enhanced SUT Service - Comprehensive action support for gaming automation
 Supports all modular action types: clicks, drags, scrolls, hotkeys, text input, etc.
@@ -153,6 +154,29 @@ def status():
             "performance_monitoring", "multi_monitor", "gaming_optimizations"
         ]
     })
+
+@app.route('/screen_info', methods=['GET'])
+def screen_info():
+    """Get screen resolution and monitor information."""
+    try:
+        import tkinter as tk
+        
+        # Get screen resolution using tkinter
+        root = tk.Tk()
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+        root.destroy()
+        
+        logger.info(f"Screen resolution: {screen_width}x{screen_height}")
+        return jsonify({
+            "status": "success",
+            "screen_width": screen_width,
+            "screen_height": screen_height,
+            "resolution": f"{screen_width}x{screen_height}"
+        })
+    except Exception as e:
+        logger.error(f"Error getting screen info: {str(e)}")
+        return jsonify({"status": "error", "error": str(e)}), 500
 
 @app.route('/screenshot', methods=['GET'])
 def screenshot():
