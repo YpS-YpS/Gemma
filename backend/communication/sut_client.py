@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 SUT client for communication with SUT devices
 """

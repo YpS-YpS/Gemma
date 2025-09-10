@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Main backend controller - orchestrates all communication between components
 """
@@ -5,6 +6,7 @@ Main backend controller - orchestrates all communication between components
 import logging
 import threading
 import time
+from datetime import datetime
 from typing import Dict, Any, Optional, List
 from flask import Flask
 from flask_socketio import SocketIO
@@ -57,6 +59,26 @@ class BackendController:
             timeout=60.0
         )
         
+        # Initialize run manager and automation orchestrator
+        from .run_manager import RunManager
+        from .automation_orchestrator import AutomationOrchestrator
+        
+        self.automation_orchestrator = AutomationOrchestrator(
+            self.game_manager,
+            self.device_registry, 
+            self.omniparser_client
+        )
+        self.run_manager = RunManager(
+            max_concurrent_runs=5, 
+            orchestrator=self.automation_orchestrator
+        )
+        
+        # Set up run manager callbacks for WebSocket events
+        self.run_manager.on_run_started = self._on_run_started
+        self.run_manager.on_run_progress = self._on_run_progress
+        self.run_manager.on_run_completed = self._on_run_completed
+        self.run_manager.on_run_failed = self._on_run_failed
+
         # Initialize API routes
         self.api_routes = APIRoutes(
             self.device_registry,
@@ -66,6 +88,9 @@ class BackendController:
             self.websocket_handler,
             self.game_manager
         )
+        
+        # Pass run manager to API routes
+        self.api_routes.run_manager = self.run_manager
         
         # Register API routes with Flask app
         self.api_routes.register_routes(self.app)
@@ -87,6 +112,9 @@ class BackendController:
         
         # Start discovery service
         self.discovery_service.start()
+        
+        # Start run manager
+        self.run_manager.start()
         
         # Start monitoring thread
         self.monitor_thread = threading.Thread(
@@ -112,18 +140,131 @@ class BackendController:
         self.running = False
         self._shutdown_event.set()
         
-        # Stop discovery service
-        self.discovery_service.stop()
-        
-        # Wait for monitor thread
-        if self.monitor_thread and self.monitor_thread.is_alive():
-            self.monitor_thread.join(timeout=5)
+        try:
+            # Stop run manager first (most important)
+            if hasattr(self, 'run_manager'):
+                self.run_manager.stop()
             
-        # Close communication clients
-        self.sut_client.close()
-        self.omniparser_client.close()
+            # Stop discovery service
+            if hasattr(self, 'discovery_service'):
+                self.discovery_service.stop()
+            
+            # Wait for monitor thread with timeout
+            if self.monitor_thread and self.monitor_thread.is_alive():
+                logger.info("Waiting for monitor thread to finish...")
+                self.monitor_thread.join(timeout=3)
+                if self.monitor_thread.is_alive():
+                    logger.warning("Monitor thread did not shut down gracefully")
+                
+            # Close communication clients
+            try:
+                if hasattr(self, 'sut_client'):
+                    self.sut_client.close()
+            except Exception as e:
+                logger.error(f"Error closing SUT client: {e}")
+                
+            try:
+                if hasattr(self, 'omniparser_client'):
+                    self.omniparser_client.close()
+            except Exception as e:
+                logger.error(f"Error closing Omniparser client: {e}")
+                
+            # Force close SocketIO connections
+            try:
+                if hasattr(self, 'socketio'):
+                    logger.info("Closing SocketIO connections...")
+                    # Disconnect all clients first
+                    self.socketio.emit('disconnect')
+                    # Stop the server
+                    self.socketio.stop()
+                    logger.info("SocketIO stopped successfully")
+            except Exception as e:
+                logger.error(f"Error stopping SocketIO: {e}")
+                
+            # Additional cleanup - force close any remaining threads
+            import threading
+            active_threads = threading.active_count()
+            if active_threads > 1:
+                logger.warning(f"Still have {active_threads} active threads after shutdown")
+        
+        except Exception as e:
+            logger.error(f"Error during shutdown: {e}")
         
         logger.info("Backend controller stopped")
+    
+    # WebSocket event callbacks for run management
+    def _on_run_started(self, run_id: str, run_data: Dict[str, Any]):
+        """Callback when a run starts"""
+        logger.info(f"Run started: {run_id}")
+        self.websocket_handler.broadcast_message('run_started', {
+            'run_id': run_id,
+            'run': run_data
+        })
+        
+        # Also emit runs_update
+        runs_data = self.run_manager.get_all_runs()
+        self.websocket_handler.broadcast_message('runs_update', runs_data)
+    
+    def _on_run_progress(self, run_id: str, run_data: Dict[str, Any]):
+        """Callback when run progress updates"""
+        self.websocket_handler.broadcast_message('run_progress', {
+            'run_id': run_id,
+            'run': run_data
+        })
+        
+        # Also emit runs_update for consistency
+        runs_data = self.run_manager.get_all_runs()
+        self.websocket_handler.broadcast_message('runs_update', runs_data)
+    
+    def _on_run_completed(self, run_id: str, run_data: Dict[str, Any]):
+        """Callback when a run completes successfully"""
+        logger.info(f"Run completed: {run_id}")
+        self.websocket_handler.broadcast_message('run_completed', {
+            'run_id': run_id,
+            'run': run_data
+        })
+        
+        # Emit updated runs data
+        runs_data = self.run_manager.get_all_runs()
+        self.websocket_handler.broadcast_message('runs_update', runs_data)
+    
+    def _on_run_failed(self, run_id: str, run_data: Dict[str, Any]):
+        """Callback when a run fails"""
+        logger.warning(f"Run failed: {run_id}")
+        
+        # Emit run failed event
+        self.websocket_handler.broadcast_message('run_failed', {
+            'run_id': run_id,
+            'run': run_data
+        })
+        
+        # Emit specific error notification for better UX
+        error_message = run_data.get('error_message', 'Unknown error')
+        error_type = 'automation_error'
+        
+        # Determine error type based on error message
+        if error_message and isinstance(error_message, str):
+            error_lower = error_message.lower()
+            if 'file not found' in error_lower or 'executable not found' in error_lower:
+                error_type = 'file_not_found'
+            elif 'launch failed' in error_lower or 'failed to launch' in error_lower:
+                error_type = 'launch_failed'
+            elif 'connection' in error_lower or 'timeout' in error_lower:
+                error_type = 'connection_error'
+        
+        self.websocket_handler.broadcast_message('error_notification', {
+            'type': error_type,
+            'title': 'Automation Run Failed',
+            'message': error_message,
+            'run_id': run_id,
+            'game_name': run_data.get('game_name'),
+            'sut_ip': run_data.get('sut_ip'),
+            'timestamp': datetime.now().isoformat()
+        })
+        
+        # Emit updated runs data
+        runs_data = self.run_manager.get_all_runs()
+        self.websocket_handler.broadcast_message('runs_update', runs_data)
         
     def run_server(self, host: str = None, port: int = None, debug: bool = None):
         """Run the Flask-SocketIO server"""

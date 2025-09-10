@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Omniparser client for the backend system
 """

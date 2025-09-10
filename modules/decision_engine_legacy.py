@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Decision engine for determining the next action based on UI state and YAML configuration.
 """

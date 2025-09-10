@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Game Launcher module for starting games on the SUT.
 """

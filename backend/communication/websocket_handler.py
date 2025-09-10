@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 WebSocket handler for real-time frontend communication
 """

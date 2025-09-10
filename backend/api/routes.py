@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 REST API routes for the backend system
 """
@@ -464,4 +465,234 @@ class APIRoutes:
                 return jsonify(stats)
             except Exception as e:
                 logger.error(f"Error getting game stats: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        # Automation runs management
+        @app.route('/api/runs', methods=['POST'])
+        def start_automation_run():
+            """Start a new automation run"""
+            try:
+                logger.info(f"Received start automation run request from {request.remote_addr}")
+                data = request.get_json()
+                logger.info(f"Request data: {data}")
+                if not data:
+                    logger.warning("No request data provided")
+                    return jsonify({"error": "Request data required"}), 400
+                
+                # Validate required fields
+                sut_ip = data.get('sut_ip')
+                game_name = data.get('game_name')
+                iterations = data.get('iterations', 1)
+                
+                if not sut_ip or not game_name:
+                    return jsonify({"error": "sut_ip and game_name are required"}), 400
+                
+                # Validate SUT exists and is online
+                device = self.device_registry.get_device_by_ip(sut_ip)
+                if not device:
+                    return jsonify({"error": f"SUT {sut_ip} not found"}), 404
+                
+                if not device.is_online:
+                    return jsonify({"error": f"SUT {sut_ip} is not online"}), 400
+                
+                # Validate game exists
+                if not self.game_manager:
+                    return jsonify({"error": "Game manager not available"}), 500
+                
+                game = self.game_manager.get_game(game_name)
+                if not game:
+                    return jsonify({"error": f"Game '{game_name}' not found"}), 404
+                
+                # Queue the run (run_manager is passed from controller)
+                if not hasattr(self, 'run_manager') or self.run_manager is None:
+                    logger.error("Run manager not available when trying to start run")
+                    return jsonify({"error": "Run manager not available"}), 500
+                
+                logger.info(f"Run manager available, queuing run: {game_name} on {sut_ip} ({iterations} iterations)")
+                
+                try:
+                    run_id = self.run_manager.queue_run(
+                        game_name=game_name,
+                        sut_ip=sut_ip,
+                        sut_device_id=device.unique_id,
+                        iterations=int(iterations)
+                    )
+                    logger.info(f"Successfully queued run {run_id}")
+                    
+                    return jsonify({
+                        "status": "success",
+                        "run_id": run_id,
+                        "message": f"Started automation run for {game_name} on {sut_ip}"
+                    })
+                    
+                except Exception as queue_error:
+                    logger.error(f"Failed to queue run: {queue_error}", exc_info=True)
+                    return jsonify({"error": f"Failed to queue run: {str(queue_error)}"}), 500
+                
+            except Exception as e:
+                logger.error(f"Error starting automation run: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @app.route('/api/runs', methods=['GET'])
+        def get_automation_runs():
+            """Get all automation runs (active and history)"""
+            try:
+                if not hasattr(self, 'run_manager') or self.run_manager is None:
+                    return jsonify({"active": {}, "history": []})
+                
+                runs_data = self.run_manager.get_all_runs()
+                return jsonify(runs_data)
+                
+            except Exception as e:
+                logger.error(f"Error getting automation runs: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @app.route('/api/runs/<run_id>', methods=['GET'])
+        def get_automation_run(run_id):
+            """Get specific automation run status"""
+            try:
+                if not hasattr(self, 'run_manager') or self.run_manager is None:
+                    return jsonify({"error": "Run manager not available"}), 500
+                
+                run_data = self.run_manager.get_run_status(run_id)
+                if not run_data:
+                    return jsonify({"error": f"Run {run_id} not found"}), 404
+                
+                return jsonify(run_data)
+                
+            except Exception as e:
+                logger.error(f"Error getting run {run_id}: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @app.route('/api/runs/<run_id>/stop', methods=['POST'])
+        def stop_automation_run(run_id):
+            """Stop a specific automation run"""
+            try:
+                if not hasattr(self, 'run_manager') or self.run_manager is None:
+                    return jsonify({"error": "Run manager not available"}), 500
+                
+                success = self.run_manager.stop_run(run_id)
+                if not success:
+                    return jsonify({"error": f"Run {run_id} not found or not running"}), 404
+                
+                return jsonify({
+                    "status": "success",
+                    "message": f"Stopped run {run_id}"
+                })
+                
+            except Exception as e:
+                logger.error(f"Error stopping run {run_id}: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @app.route('/api/runs/stats', methods=['GET'])
+        def get_runs_stats():
+            """Get automation runs statistics"""
+            try:
+                if not hasattr(self, 'run_manager') or self.run_manager is None:
+                    return jsonify({
+                        "active_runs": 0,
+                        "queued_runs": 0,
+                        "total_history": 0,
+                        "completed_runs": 0,
+                        "failed_runs": 0
+                    })
+                
+                stats = self.run_manager.get_stats()
+                return jsonify(stats)
+                
+            except Exception as e:
+                logger.error(f"Error getting runs stats: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        # SUT Pairing Management
+        @app.route('/api/suts/pair', methods=['POST'])
+        def pair_sut():
+            """Pair a SUT device"""
+            try:
+                data = request.get_json()
+                if not data:
+                    return jsonify({"error": "Request data required"}), 400
+                
+                device_id = data.get('device_id')
+                nickname = data.get('nickname', '')
+                
+                if not device_id:
+                    return jsonify({"error": "device_id is required"}), 400
+                
+                # Verify SUT exists in device registry
+                device = self.device_registry.get_device_by_id(device_id)
+                if not device:
+                    return jsonify({"error": f"SUT {device_id} not found"}), 404
+                
+                # Update SUT info in database first
+                if hasattr(self, 'db') and self.db:
+                    self.db.upsert_sut(
+                        device_id=device.unique_id,
+                        ip_address=device.ip,
+                        port=device.port,
+                        hostname=device.hostname,
+                        capabilities=device.capabilities,
+                        status='online' if device.is_online else 'offline'
+                    )
+                    
+                    # Now pair the SUT
+                    success = self.db.pair_sut(device_id, nickname)
+                    if success:
+                        # Broadcast update to WebSocket clients
+                        paired_suts = self.db.get_paired_suts()
+                        self.websocket_handler.broadcast_message('paired_suts_update', paired_suts)
+                        
+                        return jsonify({
+                            "status": "success",
+                            "message": f"SUT {device_id} paired successfully",
+                            "nickname": nickname
+                        })
+                    else:
+                        return jsonify({"error": "Failed to pair SUT"}), 500
+                else:
+                    return jsonify({"error": "Database not available"}), 500
+                
+            except Exception as e:
+                logger.error(f"Error pairing SUT: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @app.route('/api/suts/unpair/<device_id>', methods=['POST'])
+        def unpair_sut(device_id):
+            """Unpair a SUT device (forget device)"""
+            try:
+                if hasattr(self, 'db') and self.db:
+                    success = self.db.unpair_sut(device_id)
+                    if success:
+                        # Broadcast update to WebSocket clients
+                        paired_suts = self.db.get_paired_suts()
+                        self.websocket_handler.broadcast_message('paired_suts_update', paired_suts)
+                        
+                        return jsonify({
+                            "status": "success",
+                            "message": f"SUT {device_id} unpaired successfully"
+                        })
+                    else:
+                        return jsonify({"error": f"SUT {device_id} not found or not paired"}), 404
+                else:
+                    return jsonify({"error": "Database not available"}), 500
+                
+            except Exception as e:
+                logger.error(f"Error unpairing SUT {device_id}: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @app.route('/api/suts/paired', methods=['GET'])
+        def get_paired_suts():
+            """Get all paired SUTs"""
+            try:
+                if hasattr(self, 'db') and self.db:
+                    paired_suts = self.db.get_paired_suts()
+                    return jsonify({
+                        "paired_suts": paired_suts,
+                        "count": len(paired_suts)
+                    })
+                else:
+                    return jsonify({"paired_suts": [], "count": 0})
+                
+            except Exception as e:
+                logger.error(f"Error getting paired SUTs: {e}")
                 return jsonify({"error": str(e)}), 500

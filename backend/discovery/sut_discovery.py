@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Network SUT discovery service with unique identification
 """
@@ -143,7 +144,7 @@ class SUTDiscoveryService:
             online_count = 0
             
             # Use ThreadPoolExecutor for concurrent scanning
-            with ThreadPoolExecutor(max_workers=20) as executor:
+            with ThreadPoolExecutor(max_workers=5) as executor:
                 # Submit all scan tasks
                 future_to_ip = {
                     executor.submit(self._scan_ip, ip): ip 

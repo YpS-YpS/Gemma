@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Network utilities for dynamic network interface discovery
 """

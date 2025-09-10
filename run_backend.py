@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Simple script to run the backend server
 """

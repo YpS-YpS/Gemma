@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Device registry for tracking SUT devices and their states
 """

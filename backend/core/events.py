@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Event system for real-time updates between components
 """

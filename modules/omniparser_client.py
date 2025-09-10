@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Client for interacting with the Omniparser server.
 Sends screenshots and receives UI element detections.
@@ -22,19 +23,20 @@ logger = logging.getLogger(__name__)
 class OmniparserClient:
     """Client for the Omniparser API server with streamlined annotation handling."""
     
-    def __init__(self, api_url: str = "http://localhost:8000"):
+    def __init__(self, api_url: str = "http://localhost:8000", screen_width: int = 1920, screen_height: int = 1080):
         """
         Initialize the Omniparser client.
         
         Args:
             api_url: URL of the Omniparser API server
+            screen_width: Screen width for coordinate scaling (default: 1920)
+            screen_height: Screen height for coordinate scaling (default: 1080)
         """
         self.api_url = api_url
         self.session = requests.Session()
-        # Assuming 2560x1600 resolution - adjust as needed for your target resolution
-        self.screen_width = 2560
-        self.screen_height = 1600
-        logger.info(f"OmniparserClient initialized with API URL: {api_url}")
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        logger.info(f"OmniparserClient initialized with API URL: {api_url}, resolution: {screen_width}x{screen_height}")
         
         # Test connection to the API
         try:
@@ -312,6 +314,8 @@ class OmniparserClient:
                 element_text = bbox.element_text if bbox.element_text else "(no text)"
                 if len(element_text) > 30:
                     element_text = element_text[:27] + "..."
+                # Sanitize Unicode characters for logging
+                element_text = element_text.encode('ascii', errors='replace').decode('ascii')
                 logger.info(f"  [{i+1}] {bbox.element_type} at ({bbox.x},{bbox.y},{bbox.width}x{bbox.height}): '{element_text}'")
         else:
             logger.info("  No UI elements detected")

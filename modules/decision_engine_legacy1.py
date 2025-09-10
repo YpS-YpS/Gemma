@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Enhanced Decision Engine module based on Finite State Machine principles.
 Supports flexible text matching and state context for any game benchmark.

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # backend/core/game_manager.py
 """
 Game configuration management for the new backend system
