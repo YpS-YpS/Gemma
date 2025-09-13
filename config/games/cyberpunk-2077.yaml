@@ -1,0 +1,200 @@
+# cyberpunk 2077 Benchmark Configuration
+metadata:
+  game_name: "Cyberpunk 2077"
+  # ORIGINAL: path: "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Cyberpunk 2077\\bin\\x64\\Cyberpunk2077.exe"
+  path: "D:\\SteamLibrary\\steamapps\\common\\Cyberpunk 2077\\bin\\x64\\Cyberpunk2077.exe"  # TEMP: Updated to D: drive
+  process_id: "Cyberpunk2077"  # Actual process name in Task Manager
+  version: "1.0"
+  benchmark_duration: 66
+  startup_wait: 35 
+  resolution: "1920x1080"
+  preset: "High"
+
+# Simple step-by-step workflow
+steps:
+  1:
+    description: "Press space to skip intro" 
+    action:
+      type: "key"
+      text: "PRESS TO CONTINUE"
+      key: "space"
+    expected_delay: 10
+    timeout: 30
+
+  2:
+    description: "Press space to proceed" 
+    action:
+      type: "key"
+      text: "PRESS TO CONTINUE"
+      key: "space"
+    expected_delay: 15
+    timeout: 30
+
+  3:
+    description: "PRESS SETTINGS"
+    find:
+      type: "any"
+      text: "SETTINGS"
+      text_match: "exact"
+    action:
+      type: "click"
+      button: "left"
+      move_duration: 1
+      click_delay: 1
+    verify_success: 
+      - type: "any"
+        text: "GRAPHICS"
+        text_match: "contains"
+    expected_delay: 10
+    timeout: 20
+
+  4:
+    description: "PRESS GRAPHICS"
+    find:
+      type: "any"
+      text: "GRAPHICS"
+      text_match: "exact"
+    action:
+      type: "click"
+      button: "left"
+      move_duration: 1
+      click_delay: 1
+    verify_success: 
+      - type: "any"
+        text: "RUN BENCHMARK"
+        text_match: "contains"
+    expected_delay: 10
+    timeout: 20
+
+  # 3:
+  #   description: "Press 3"  # bounding box not detecting properly so added key press to move
+  #   action:
+  #     type: "key"
+  #     key: "3"
+  #   expected_delay: 5
+  #   timeout: 30
+
+  # 4:
+  #   description: "Press 3"  # bounding box not detecting properly so added key press to move
+  #   action:
+  #     type: "key"
+  #     key: "3"
+  #   expected_delay: 5
+  #   timeout: 30
+
+  # 5:
+  #   description: "Press 3"  # bounding box not detecting properly so added key press to move
+  #   action:
+  #     type: "key"
+  #     key: "3"
+  #   expected_delay: 5
+  #   timeout: 30
+
+  5:
+    description: "CLICK run benchmark option"
+    find:
+      type: "any"
+      text: "RUN BENCHMARK"
+      text_match: "contains"
+    action:
+      type: "click"
+      key: "left"
+    verify_success: 
+      - type: "any"
+        text: "CONFIRM"
+        text_match: "contains"
+    expected_delay: 10
+    timeout: 15   
+
+  6:
+    description: "Click confirm to start benchmark"
+    find:
+      type: "any"
+      text: "CONFIRM"
+      text_match: "contains"
+    action:
+      type: "click"
+      key: "left"
+    expected_delay: 10
+    timeout: 20
+
+  7:
+    description: "Benchmark run start"
+    action:
+      type: "wait"
+      duration: 70
+    expected_delay: 0
+    timeout: 90
+
+  8:
+    description: "result page"
+    find:
+      type: "any"
+      text: "Exit"
+      text_match: "startswith"
+    action:
+      type: "click"
+      button: "left"
+    verify_success:
+      - type: "any"
+        text: "CONFIRM"
+        text_match: "contains"
+    expected_delay: 10
+    timeout: 20
+
+  9:
+    description: "Click CONFIRM TO exit"
+    find:
+      type: "any"
+      text: "CONFIRM"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+    verify_success:
+      - type: "any"
+        text: "PRESS TO CONTINUE"
+        text_match: "contains"
+    expected_delay: 20
+    timeout: 40
+
+  10:
+    description: "Press space to skip intro" 
+    action:
+      type: "key"
+      text: "PRESS TO CONTINUE"
+      key: "space"
+    verify_success:
+      - type: "any"
+        text: "QUIT GAME"
+        text_match: "contains"
+    expected_delay: 10
+    timeout: 30
+
+  11:
+    description: "quit game click"
+    find:
+      type: "any"
+      text: "QUIT GAME"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+    expected_delay: 10
+    timeout: 20
+
+# Enhanced fallback actions
+fallbacks:
+  general:
+    action: "key"
+    key: "Escape"
+    expected_delay: 2
+    max_retries: 3
+  
+  # Specific fallback for stuck benchmark
+  benchmark_stuck:
+    action: "key"
+    key: "Alt+F4"  # Force close if needed
+    expected_delay: 3
+    max_retries: 2
+

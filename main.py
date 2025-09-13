@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Main orchestration script for Game UI Navigation Automation Tool.
 Enhanced to support multiple games with benchmarks.

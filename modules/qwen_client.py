@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Client for interacting with the Qwen VL model running in LMStudio.
 Uses the OpenAI-compatible API to send images and get UI element detections.

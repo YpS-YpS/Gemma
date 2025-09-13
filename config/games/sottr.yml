@@ -1,0 +1,206 @@
+# Shadow of the Tomb Raider Benchmark Configuration 
+metadata:
+  game_name: "Shadow of the Tomb Raider"
+  # ORIGINAL: path: "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Shadow of the Tomb Raider\\SOTTR.exe"
+  path: "D:\\SteamLibrary\\steamapps\\common\\Shadow of the Tomb Raider\\SOTTR.exe"  # TEMP: Updated to D: drive
+  process_id: "SOTTR"  # Actual process name in Task Manager click -> #ctypes keys -> pydirectinput
+  version: "1.0"
+  benchmark_duration: 120
+  startup_wait: 10
+  resolution: "1920x1080"
+  preset: "High"
+
+# Simple step-by-step workflow
+steps:
+
+  1:
+    description: "Click Play Button"
+    find:
+      type: "any"
+      text: "Play"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      move_duration: 0.5
+      click_delay: 0.5
+    verify_success:
+      - type: "any"
+        text: "OPTIONS"
+        text_match: "contains"
+    expected_delay: 20
+    timeout: 20
+
+  2:
+    description: "Click option button"
+    find:
+      type: "any"
+      text: "OPTIONS"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+      move_duration: 0.5
+      click_delay: 0.5
+    verify_success:
+      - type: "any"
+        text: "DISPLAY AND GRAPHICS"
+        text_match: "contains"
+    expected_delay: 5
+    timeout: 20
+
+  3:
+    description: "Click DISPLAY AND GRAPHICS option"
+    find:
+      type: "any"
+      text: "DISPLAY AND GRAPHICS"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+      move_duration: 1.5
+      click_delay: 1.5
+    verify_success:
+      - type: "any"
+        text: "RUN BENCHMARK"
+        text_match: "contains"
+    expected_delay: 5
+    timeout: 20
+
+  4:
+    description: "click Benchmark button"
+    find:
+      type: "any"
+      text: "RUN BENCHMARK"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      move_duration: 1.5
+      click_delay: 1.5
+    verify_success:
+      - type: "any"
+        text: "FPS"
+        text_match: "contains"
+    expected_delay: 5
+    timeout: 20
+
+  5:
+    description: "Wait for benchmark to run"
+    action:
+      type: "wait"
+      duration: 200
+    expected_delay: 0
+    timeout: 240
+
+  6:
+    description: "Click close to escape 1"
+    find:
+      type: "any"
+      text: "CLOSE"
+      text_match: "contains"
+    action:
+        type: "key"
+        key: "escape"
+        # methodType: "pydirectinput"
+    verify_success:
+      - type: "any"
+        text: "CLOSE"
+        text_match: "contains"
+    expected_delay: 8
+    timeout: 20
+
+  7:
+    description: "Click close to escape 2"
+    find:
+      type: "any"
+      text: "CLOSE"
+      text_match: "contains"
+    action:
+        type: "key"
+        key: "escape"
+        # methodType: "pydirectinput"
+    verify_success:
+      - type: "any"
+        text: "QUIT GAME"
+        text_match: "contains"
+    expected_delay: 5
+    timeout: 20
+
+  8:
+    description: "Click quit game button"
+    find:
+      type: "icon"
+      text: "QUIT GAME"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+    expected_delay: 5
+    timeout: 20
+
+  9:
+    description: "Press Enter key"
+    action:
+      type: "key"
+      key: "enter"
+      # methodType: "pydirectinput"
+    expected_delay: 5
+
+# Fallback actions
+fallbacks:
+  general:
+    action: "key"
+    key: "Escape"
+    expected_delay: 1
+    max_retries: 3
+
+Click: 2
+Key: Escape, Enter
+
+1:
+  description: "Click Exit "
+  find:
+    type: "icon"
+    text: "Exit"
+    text_match: "contains"
+  action:
+    type: "click"
+    button: "Right"
+  verify_success:
+    - type: "icon"
+      text: "Confirm"
+  expected_delay: 5
+  timeout: 20
+
+2:
+  description: "Click Play "
+  find:
+    type: "icon"
+    text: "Play"
+    text_match: "contains"
+  action:
+    type: "key"
+    button: "enter"
+  verify_success:
+    - type: "icon"
+      text: "Settings"
+  expected_delay: 5
+  timeout: 20
+3:
+  description: "Click Settings "
+  find:
+    type: "icon"
+    text: "Settings"
+    text_match: "contains"
+  action:
+    type: "key"
+    button: "m"
+  verify_success:
+    - type: "icon"
+      text: "Video"
+  expected_delay: 5
+  timeout: 20

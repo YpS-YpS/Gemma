@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 GUI Application for Game UI Navigation Automation Tool
 This provides a user-friendly interface for controlling the automation tool.

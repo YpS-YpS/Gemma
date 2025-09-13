@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Simple Configuration Parser for Game Automation
 

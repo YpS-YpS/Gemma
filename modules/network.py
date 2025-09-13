@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Network communication module for ARL-SUT interaction.
 Handles all network operations between the development PC and the system under test.
@@ -102,6 +103,36 @@ class NetworkManager:
             return response.content
         except requests.RequestException as e:
             logger.error(f"Failed to get screenshot: {str(e)}")
+            raise
+    
+    def get_screen_resolution(self) -> tuple[int, int]:
+        """
+        Get the screen resolution from the SUT.
+        
+        Returns:
+            Tuple of (width, height)
+        
+        Raises:
+            RequestException: If the request fails
+        """
+        try:
+            response = self.session.get(
+                f"{self.base_url}/screen_info",
+                timeout=10
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            if data.get("status") == "success":
+                width = data.get("screen_width")
+                height = data.get("screen_height")
+                logger.info(f"Screen resolution retrieved: {width}x{height}")
+                return width, height
+            else:
+                raise Exception(f"SUT returned error: {data.get('error', 'Unknown error')}")
+                
+        except requests.RequestException as e:
+            logger.error(f"Failed to get screen resolution: {str(e)}")
             raise
     
     def launch_game(self, game_path: str) -> Dict[str, Any]:

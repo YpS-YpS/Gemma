@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Enhanced SUT Service - Comprehensive action support for gaming automation
 Supports all modular action types: clicks, drags, scrolls, hotkeys, text input, etc.
@@ -131,16 +132,51 @@ def terminate_process_by_name(process_name):
 
 @app.route('/status', methods=['GET'])
 def status():
-    """Enhanced status endpoint with capabilities."""
+    """Enhanced status endpoint with capabilities and Gemma identification."""
+    import socket
+    import platform
+    import uuid
+    
+    # Generate or get unique device ID
+    device_id = f"gemma_sut_{platform.node()}_{uuid.getnode()}"
+    
     return jsonify({
         "status": "running",
         "version": "2.0",
+        "gemma_sut_signature": "gemma_sut_v2",  # Unique identifier for Gemma SUTs
+        "device_id": device_id,
+        "hostname": platform.node(),
+        "platform": platform.system(),
+        "architecture": platform.machine(),
         "capabilities": [
             "basic_clicks", "advanced_clicks", "drag_drop", "scroll",
             "hotkeys", "text_input", "sequences", "process_management",
             "performance_monitoring", "multi_monitor", "gaming_optimizations"
         ]
     })
+
+@app.route('/screen_info', methods=['GET'])
+def screen_info():
+    """Get screen resolution and monitor information."""
+    try:
+        import tkinter as tk
+        
+        # Get screen resolution using tkinter
+        root = tk.Tk()
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+        root.destroy()
+        
+        logger.info(f"Screen resolution: {screen_width}x{screen_height}")
+        return jsonify({
+            "status": "success",
+            "screen_width": screen_width,
+            "screen_height": screen_height,
+            "resolution": f"{screen_width}x{screen_height}"
+        })
+    except Exception as e:
+        logger.error(f"Error getting screen info: {str(e)}")
+        return jsonify({"status": "error", "error": str(e)}), 500
 
 @app.route('/screenshot', methods=['GET'])
 def screenshot():
@@ -241,7 +277,7 @@ def launch_game():
                 response_data["game_process_pid"] = actual_process.pid
                 response_data["game_process_name"] = actual_process.name()
                 response_data["game_process_status"] = actual_process.status()
-                logger.info(f"✓ Game launched successfully: {actual_process.name()} (PID: {actual_process.pid})")
+                logger.info(f"[OK] Game launched successfully: {actual_process.name()} (PID: {actual_process.pid})")
             else:
                 # This is now a warning, not an error - the game might still be starting
                 logger.warning(f"Game process '{current_game_process_name}' not found within {max_wait_time} seconds")

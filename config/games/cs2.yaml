@@ -1,74 +1,508 @@
-# cs2_simple_steps.yaml
+# Counter-Strike 2 Advanced Benchmark Configuration
+# Enhanced for Intel Gaming Performance Analysis
+# Supports all action types and Intel-specific optimizations
+
 metadata:
   game_name: "Counter-Strike 2"
-  path: "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Counter-Strike Global Offensive\\game\\bin\\win64\\cs2.exe"
-  version: "1.0"
+  path: "D:\\SteamLibrary\\steamapps\\common\\Counter-Strike Global Offensive\\game\\bin\\win64\\cs2.exe"
+  # path: "D:\\Games\\steamapps\\common\\Counter-Strike Global Offensive\\gasme\\bin\\win64\\cs2.exe"
+  process_id: "cs2"
+  version: "2.0"
   benchmark_duration: 110
   startup_wait: 30
   resolution: "1920x1080"
   preset: "High"
-  
+  engine: "Source 2"
+  graphics_api: "DirectX 11"
 
-# Simple step-by-step workflow
+# Enhanced features for Intel performance analysis
+enhanced_features:
+  monitor_process_cpu: false
+  monitor_hybrid_cores: false
+  track_power_consumption: false
+  screenshot_on_failure: false
+  detailed_logging: false
+  thermal_monitoring: false
+
+# Main automation workflow with advanced action demonstrations
 steps:
+  # === INITIAL SETUP AND MENU NAVIGATION ===
   1:
-    description: "Click PLAY button from main menu"
-    find_and_click:
-      type: "icon"
+    description: "Left-click PLAY button from main menu"
+    find:
+      type: "any"
       text: "PLAY"
       text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      move_duration: 0.3
+      click_delay: 0.2
     verify_success:
-      - type: "icon"
+      - type: "any"
         text: "MATCHMAKING"
-      - type: "icon"
+        text_match: "contains"
+      - type: "any"
         text: "WORKSHOP MAPS"
-    expected_delay: 2
-    timeout: 20
-    
+        text_match: "contains"
+    expected_delay: 1
+    timeout: 25
+
   2:
-    description: "Click WORKSHOP MAPS to open workshop browser"
-    find_and_click:
-      type: "icon"
+    description: "Navigate to WORKSHOP MAPS with smooth movement"
+    find:
+      type: "any"
       text: "WORKSHOP MAPS"
       text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      move_duration: 0.5
+      click_delay: 0.3
     verify_success:
-      - type: "icon"
+      - type: "any"
         text: "Filter Maps"
-    expected_delay: 5
-    timeout: 20
-    
+        text_match: "contains"
+    expected_delay: 1
+    timeout: 25
+
   3:
-    description: "Click CS2 FPS Bench map"
-    find_and_click:
-      type: "icon"
+    description: "Search for CS2 FPS Benchmark map"
+    find:
+      type: "any"
       text: "CS2 FPS Bench"
       text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      move_duration: 0.4
+      click_delay: 0.2
     verify_success:
-      - type: "icon"
-        text: "GO "
-    expected_delay: 5
-    timeout: 20
-    
-  4:
-    description: "Click GO to start benchmark"
-    find_and_click:
-      type: "icon"
-      text: "GO "
-      text_match: "contains"
-    verify_success: [loading]  # No specific elements to verify during loading
-    expected_delay: 3
-    timeout: 20
-    
-  5:
-    description: "Wait for benchmark to run"
-    action: "wait"
-    duration: 110
-    timeout: 120
-
-# Fallback actions
-fallbacks:
-  general:
-    action: "key"
-    key: "Escape"
+      - type: "any"
+        text: "GO"
+        text_match: "contains"
     expected_delay: 1
-    max_retries: 3
+    timeout: 30
+
+  
+  4:
+    description: "click GO button for Start benchmark"
+    find:
+      type: "any"
+      text: "GO"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      move_duration: 0.2
+    expected_delay: 3
+    timeout: 25
+  
+  
+  # === BENCHMARK START ===
+  # # === HOTKEY DEMONSTRATION ===
+  # 5:
+  #   description: "Use F11 for fullscreen mode before benchmark"
+  #   action:
+  #     type: "key"
+  #     key: "f11"
+  #   expected_delay: 2
+
+  # 6:
+  #   description: "Press Enter to confirm any dialogs"
+  #   action:
+  #     type: "key"
+  #     key: "enter"
+  #   expected_delay: 1
+
+  # === BENCHMARK EXECUTION WITH MONITORING ===
+  5:
+    description: "Execute main benchmark with performance monitoring"
+    action:
+      type: "wait"
+      duration: 120
+      monitor_performance: true
+      log_thermal_data: true
+    expected_delay: 0
+    timeout: 130
+
+  6:
+    description: "Wait for benchmark completion and capture results"
+    find:
+      type: "any"
+      text: "consol"
+      text_match: "contains"
+    # action:
+    #   type: "key"
+    #   key: "`" # Backtick key for console"
+    action:
+      type: "text"
+      text: "quit"
+      clear_first: true
+      char_delay: 0.05
+  7:
+    # 2nd action
+    description: "Press Enter to execute console command"
+    action:
+      type: "key"
+      key: "enter"
+    expected_delay: 4
+    timeout: 20
+    expected_delay: 0
+    timeout: 10
+
+  # 7:
+  #   description: "Exit game with Quit Button"
+  #   find:
+  #     type: "any"
+  #     text: "power"
+  #     text_match: "contains"
+  #   action:
+  #     type: "click"
+  #     button: "left"
+  #     move_duration: 0.2
+  #     click_delay: 0.1
+  #   verify_success:
+  #     - type: "any"
+  #       text: "Confirm Exit"
+  #       text_match: "contains"
+  #   expected_delay: 3
+  #   timeout: 10
+
+  # # === POST-BENCHMARK ACTIONS ===
+  # 6:
+  #   description: "Capture results from console"
+  #   find:
+  #     type: "any"
+  #     text: "console"
+  #     text_match: "contains"
+  #   action:
+  #     type: "key"
+  #     button: "`" # Backtick key for console
+  #   expected_delay: 2
+  #   timeout: 20
+
+  # 9:
+  #   description: "Use hotkey to save results (Ctrl+S)"
+  #   action:
+  #     type: "hotkey"
+  #     keys: ["ctrl", "s"]
+  #   expected_delay: 2
+
+#   7:
+#     description: "Navigate back with Escape key sequence"
+#     action:
+#       type: "sequence"
+#       delay_between: 1.0
+#       actions:
+#         - type: "key"
+#           key: "escape"
+#         - type: "key"
+#           key: "escape"
+#         - type: "key"
+#           key: "escape"
+#     expected_delay: 3
+
+#   # === ADVANCED MOUSE ACTIONS ===
+#   # 11:
+#   #   description: "Scroll up in main menu to see options"
+#   #   action:
+#   #     type: "scroll"
+#   #     x: 960
+#   #     y: 540
+#   #     direction: "up"
+#   #     clicks: 3
+#   #   expected_delay: 1
+
+#   # 12:
+#   #   description: "Middle-click for special menu action"
+#   #   find:
+#   #     type: "any"
+#   #     text: "Settings"
+#   #     text_match: "contains"
+#   #   action:
+#   #     type: "middle_click"
+#   #   expected_delay: 1
+
+# # === OPTIONAL STEPS FOR HANDLING INTERRUPTIONS ===
+# optional_steps:
+#   # Handle Steam notifications
+#   steam_notification:
+#     description: "Dismiss Steam notifications"
+#     trigger:
+#       type: "button"
+#       text: "Steam"
+#       text_match: "contains"
+#     action:
+#       type: "click"
+#       button: "left"
+#     priority: 1
+
+#   # Handle Windows Game Bar
+#   windows_game_bar:
+#     description: "Close Windows Game Bar overlay"
+#     trigger:
+#       type: "label"
+#       text: "Game Bar"
+#       text_match: "contains"
+#     action:
+#       type: "hotkey"
+#       keys: ["win", "g"]
+#     priority: 2
+
+#   # Handle DirectX shader compilation
+#   shader_compilation:
+#     description: "Wait for shader compilation"
+#     trigger:
+#       type: "label"
+#       text: "Compiling Shaders"
+#       text_match: "contains"
+#     action:
+#       type: "wait"
+#       duration: 30
+#     priority: 3
+
+#   # Handle Windows Security prompt
+#   windows_security:
+#     description: "Handle Windows Security prompt"
+#     trigger:
+#       type: "button"
+#       text: "Allow"
+#       text_match: "exact"
+#     action:
+#       type: "click"
+#       button: "left"
+#     priority: 4
+
+#   # Handle CS2 update notification
+#   cs2_update:
+#     description: "Dismiss CS2 update notification"
+#     trigger:
+#       type: "button"
+#       text: "Update Available"
+#       text_match: "contains"
+#     action:
+#       type: "key"
+#       key: "escape"
+#     priority: 5
+
+# # === COMPREHENSIVE FALLBACK STRATEGIES ===
+# fallbacks:
+#   # General fallback with escalation
+#   general:
+#     type: "sequence"
+#     actions:
+#       - type: "key"
+#         key: "escape"
+#       - type: "wait"
+#         duration: 1
+#       - type: "key"
+#         key: "escape"
+#       - type: "wait"
+#         duration: 1
+#       # - type: "hotkey"
+#       #   keys: ["alt", "tab"]
+#     expected_delay: 3
+#     max_retries: 3
+
+#   # Benchmark-specific fallback
+#   benchmark_running:
+#     type: "sequence"
+#     actions:
+#       - type: "key"
+#         key: "escape"
+#       - type: "wait"
+#         duration: 2
+#       # - type: "hotkey"
+#       #   keys: ["alt", "f4"]
+#     expected_delay: 5
+#     max_retries: 2
+
+# #   # UI stuck fallback
+# #   ui_stuck:
+# #     type: "sequence"
+# #     actions:
+# #       - type: "hotkey"
+# #         keys: ["ctrl", "shift", "escape"]  # Task Manager
+# #       - type: "wait"
+# #         duration: 3
+# #       - type: "key"
+# #         key: "escape"
+# #     expected_delay: 5
+# #     max_retries: 1
+
+# #   # Intel graphics reset (for Intel Arc GPUs)
+# #   intel_graphics_reset:
+# #     type: "hotkey"
+# #     keys: ["ctrl", "shift", "win", "b"]
+# #     expected_delay: 10
+# #     max_retries: 1
+
+# # # === INTEL-SPECIFIC PERFORMANCE MONITORING ===
+# # performance_monitoring:
+# #   enable_cpu_tracking: true
+# #   enable_memory_tracking: true
+# #   enable_gpu_tracking: true
+# #   enable_power_tracking: true
+# #   enable_thermal_tracking: true
+# #   sample_interval: 2  # seconds
+# #   log_to_file: true
+  
+# #   # Intel-specific metrics
+# #   intel_metrics:
+# #     track_p_core_usage: true
+# #     track_e_core_usage: true
+# #     monitor_thread_director: true
+# #     capture_turbo_boost: true
+# #     monitor_ai_acceleration: true
+# #     track_gpu_power_states: true
+
+# # # === INTEL OPTIMIZATION SETTINGS ===
+# # intel_optimizations:
+# #   # Hybrid Core Configuration
+# #   hybrid_scheduling:
+# #     enable_thread_director: true
+# #     prefer_performance_cores: true
+# #     background_tasks_on_e_cores: true
+# #     gaming_priority: "performance"
+  
+# #   # Graphics Optimization
+# #   graphics:
+# #     gpu_scheduling: "hardware"
+# #     variable_rate_shading: true
+# #     resizable_bar: true
+# #     intel_arc_optimizations: true
+  
+# #   # Power Management
+# #   power_management:
+# #     cpu_power_profile: "performance"
+# #     gpu_power_profile: "maximum_performance"
+# #     disable_power_throttling: true
+# #     turbo_boost_enabled: true
+  
+# #   # Memory Optimization
+# #   memory:
+# #     enable_xmp: true
+# #     memory_compression: false
+# #     large_page_support: true
+
+# # === PRE-BENCHMARK VALIDATION ===
+# validation:
+#   pre_benchmark:
+#     - description: "Verify CS2 process is running"
+#       check: "process_exists"
+#       process: "cs2.exe"
+#     - description: "Verify target resolution"
+#       check: "screen_resolution"
+#       expected: "1920x1080"
+#     - description: "Check system thermal state"
+#       check: "thermal_state"
+#       max_cpu_temp: 85
+#       max_gpu_temp: 83
+#     - description: "Verify P-core availability"
+#       check: "intel_cores_available"
+#       min_p_cores: 4
+#     - description: "Check memory usage"
+#       check: "memory_available"
+#       min_available_gb: 8
+
+#   post_benchmark:
+#     - description: "Check for crash dumps"
+#       check: "file_exists"
+#       path: "crash_dumps/"
+#     - description: "Verify benchmark results captured"
+#       check: "ui_element_present"
+#       element: "Average FPS"
+#     - description: "Check thermal throttling"
+#       check: "thermal_throttling_detected"
+#       max_throttle_events: 0
+#     - description: "Validate power consumption"
+#       check: "power_consumption"
+#       max_watts: 300
+#     - description: "Check hybrid core utilization"
+#       check: "core_utilization"
+#       min_p_core_usage: 80
+#       max_e_core_usage: 40
+
+# # === ADVANCED ERROR RECOVERY ===
+# error_recovery:
+#   screenshot_on_error: true
+#   retry_with_different_vision_model: true
+#   automatic_fallback_escalation: true
+#   thermal_protection: true
+#   power_limit_protection: true
+  
+#   # Intel-specific recovery
+#   intel_recovery:
+#     reset_graphics_driver: true
+#     restart_thread_director: true
+#     clear_cpu_cache: false
+#     reset_power_management: true
+
+# # === RESULTS PROCESSING ===
+# results_processing:
+#   capture_screenshots: true
+#   save_performance_logs: true
+#   generate_detailed_report: true
+#   compare_with_baseline: true
+#   export_to_csv: true
+  
+#   # Intel Analytics
+#   intel_analytics:
+#     generate_power_report: true
+#     analyze_hybrid_efficiency: true
+#     thermal_analysis: true
+#     performance_per_watt: true
+#     ai_workload_analysis: true
+#     memory_bandwidth_analysis: true
+
+# # === REPORTING CONFIGURATION ===
+# reporting:
+#   include_system_info: true
+#   include_driver_versions: true
+#   include_bios_settings: true
+#   include_thermal_data: true
+#   include_power_data: true
+  
+#   # Custom metrics for Intel analysis
+#   custom_metrics:
+#     - name: "P-Core Utilization"
+#       unit: "percentage"
+#       target: "> 85%"
+#     - name: "E-Core Efficiency"
+#       unit: "instructions_per_watt"
+#       target: "> baseline"
+#     - name: "Thermal Efficiency"
+#       unit: "fps_per_degree"
+#       target: "> 2.0"
+#     - name: "Power Efficiency"
+#       unit: "fps_per_watt"
+#       target: "> 0.5"
+#     - name: "Memory Bandwidth Utilization"
+#       unit: "percentage"
+#       target: "> 70%"
+
+# # === BENCHMARK VARIATIONS ===
+# benchmark_variations:
+#   quick_test:
+#     duration: 30
+#     description: "Quick validation run"
+  
+#   standard_test:
+#     duration: 110
+#     description: "Standard benchmark duration"
+  
+#   extended_test:
+#     duration: 300
+#     description: "Extended thermal and stability test"
+  
+#   stress_test:
+#     duration: 600
+#     description: "Maximum stress test for thermal analysis"
+#     enable_all_monitoring: true
+    
+#   power_efficiency_test:
+#     duration: 120
+#     description: "Optimized for power consumption analysis"
+#     monitor_frequency: 0.5
+#     detailed_power_logging: true

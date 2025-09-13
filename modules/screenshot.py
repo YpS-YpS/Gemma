@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Screenshot management module for capturing and saving screenshots from the SUT.
 """

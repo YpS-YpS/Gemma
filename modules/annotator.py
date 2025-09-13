@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Annotator module for visualizing detected UI elements on screenshots.
 """

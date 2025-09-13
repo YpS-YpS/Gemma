@@ -685,10 +685,22 @@ class SimpleAutomation:
                     logger.warning(f"Failed to create verification annotation: {str(e)}")
             
             success = True
-            for verify_element in step["verify_success"]:
+            verify_success = step["verify_success"]
+            
+            # Handle both single element and list of elements
+            if isinstance(verify_success, dict):
+                verify_elements = [verify_success]
+            elif isinstance(verify_success, list):
+                verify_elements = verify_success
+            else:
+                logger.error(f"Invalid verify_success format: {type(verify_success)}")
+                return False
+            
+            for verify_element in verify_elements:
                 if not self._find_matching_element(verify_element, verify_boxes):
                     success = False
-                    logger.warning(f"Verification failed: {verify_element.get('text', 'Unknown element')} not found")
+                    element_text = verify_element.get('text', 'Unknown element') if isinstance(verify_element, dict) else str(verify_element)
+                    logger.warning(f"Verification failed: {element_text} not found")
             
             return success
             

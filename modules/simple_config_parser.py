@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Configuration parser for the simplified step-based YAML format.
 """
