@@ -1,0 +1,124 @@
+# HITMAN 3 Benchmark Configuration
+metadata:
+  game_name: "HITMAN 3"
+  # ORIGINAL: path: "C:\\Program Files\\Epic Games\\HITMAN3\\Retail\\HITMAN3.exe"
+  path: "D:\\SteamLibrary\\steamapps\\common\\HITMAN 3\\Launcher.exe"  # TEMP: Updated to D: drive (assuming moved to Steam)
+  process_id: "HITMAN 3"  # Please avoid using PaddleOCR for HITMAN 3
+  version: "1.0" #Kindly enable both the SED network and VLAN for testing purposes
+  benchmark_duration: 70
+  startup_wait: 20
+  resolution: "1920x1080"
+  preset: "High"
+
+# Simple step-by-step workflow
+steps:
+  1:
+    description: "Click OPTIONS Button"
+    find:
+      type: "any"
+      text: "OPTIONS"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+      move_duration: 0.5
+      click_delay: 0.5
+    verify_success:
+      - type: "any"
+        text: "Monitor"
+        text_match: "contains"
+    expected_delay: 20
+    timeout: 10
+
+  2:
+    description: "Scroll down to start the benchmark"
+    find:
+      type: "any"
+      text: "Monitor"
+      text_match: "contains"
+    action:
+      type: "scroll"
+      direction: "down"
+      clicks: 5
+    verify_success:
+      - type: "any"
+        text: "Start Benchmark"
+        text_match: "contains"
+    expected_delay: 1
+
+  3:
+    description: "Click on Start Benchmark Button"
+    find:
+      type: "any"
+      text: "Start Benchmark"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+      move_duration: 0.5
+      click_delay: 0.5
+    verify_success:
+      - type: "any"
+        text: "FPS"
+        text_match: "contains"
+    expected_delay: 35
+    timeout: 10
+
+  4:
+    description: "Wait for benchmark to complete"
+    action:
+      type: "wait"
+      duration: 100
+    expected_delay: 0
+    timeout: 140
+
+  5:
+    description: "Click on cancel button"
+    find:
+      type: "any"
+      text: "Cancel"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+      move_duration: 0.5
+      click_delay: 0.5
+    verify_success:
+      - type: "any"
+        text: "QUIT"
+        text_match: "contains"
+    expected_delay: 10
+    timeout: 10
+
+  6:
+    description: "Click on quit button"
+    find:
+      type: "any"
+      text: "QUIT"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+      move_duration: 0.5
+      click_delay: 0.5
+    expected_delay: 10
+    timeout: 10
+
+# Enhanced fallback actions
+fallbacks:
+  general:
+    action: "key"
+    key: "Escape"
+    expected_delay: 2
+    max_retries: 3
+
+  # Specific fallback for stuck benchmark
+  benchmark_stuck:
+    action: "key"
+    key: "Alt+F4"
+    expected_delay: 3
+    max_retries: 2

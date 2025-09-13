@@ -1,7 +1,7 @@
 # Black Myth Wukong Benchmark Configuration
 metadata:
   game_name: "Black Myth Wukong"
-  path: "D:\\SteamLibrary\\steamapps\\common\\Black Myth Wukong Benchmark Tool\\b1\\Binaries\\Win64\\b1-Win64-Shipping.exe"
+  path: "D:\\Games\\steamapps\\common\\Black Myth Wukong Benchmark Tool\\b1\\Binaries\\Win64\\b1-Win64-Shipping.exe"
   process_id: "b1"  # Actual process name in Task Manager
   version: "1.0"
   benchmark_duration: 150

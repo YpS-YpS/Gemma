@@ -1,0 +1,183 @@
+# Assassin's Creed Mirage Benchmark Configuration
+metadata:
+  game_name: "Assassins Creed Mirage"
+  # ORIGINAL: path: "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Assassin's Creed Mirage\\ACMirage.exe"
+  path: "D:\\SteamLibrary\\steamapps\\common\\Assassin's Creed Mirage\\ACMirage.exe"  # TEMP: Updated to D: drive
+  process_id: "Assassin's Creed Mirage"
+  version: "1.0" #Kindly enable both the SED network and VLAN for testing purposes
+  benchmark_duration: 70
+  startup_wait: 15
+  resolution: "1920x1080"
+  preset: "High"
+
+# Simple step-by-step workflow
+steps:
+  1:
+    description: "Skip the intro page of game"
+    find:
+      type: "any"
+      text: "Warning"
+    action:
+      type: "sequence"
+      delay_between: 4
+      actions:
+        - type: "key"
+          key: "esc"
+          methodType: "pydirectinput"
+        - type: "key"
+          key: "esc"
+          methodType: "pydirectinput"
+        - type: "key"
+          key: "esc"
+          methodType: "pydirectinput"
+        - type: "key"
+          key: "esc"
+          methodType: "pydirectinput"
+        - type: "key"
+          key: "esc"
+          methodType: "pydirectinput"
+        - type: "key"
+          key: "esc"
+          methodType: "pydirectinput"
+        - type: "key"
+          key: "esc"
+          methodType: "pydirectinput"
+        - type: "key"
+          key: "esc"
+          methodType: "pydirectinput"
+        - type: "key"
+          key: "esc"
+          methodType: "pydirectinput"
+        - type: "key"
+          key: "esc"
+          methodType: "pydirectinput"
+    verify_success:
+      - type: "any"
+        text: "Benchmark"
+        text_match: "contains"
+    expected_delay: 5
+
+  2:
+    description: "Click the benchmark button"
+    find:
+      type: "any"
+      text: "Benchmark"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+      move_duration: 0.5
+      click_delay: 0.5
+    verify_success:
+      - type: "any"
+        text: "Yes"
+        text_match: "contains"
+    expected_delay: 10
+    timeout: 10
+
+  3:
+    description: "Click the Yes button to begin the benchmark"
+    find:
+      type: "any"
+      text: "Yes"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+      move_duration: 0.5
+      click_delay: 0.5
+    verify_success:
+      - type: "any"
+        text: "FPS"
+        text_match: "contains"
+    expected_delay: 15
+    timeout: 10
+
+  4:
+    description: "Wait for benchmark to complete"
+    action:
+      type: "wait"
+      duration: 100
+    expected_delay: 0
+    timeout: 140
+
+  5:
+    description: "Handle benchmark results"
+    find:
+      type: "any"
+      text: "Esc"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+    verify_success:
+      - type: "any"
+        text: "Press any key"
+        text_match: "contains"
+    expected_delay: 25
+    timeout: 10
+
+  6:
+    description: "Click on press any key"
+    find:
+      type: "any"
+      text: "Press any key"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+    verify_success:
+      - type: "any"
+        text: "Quit to Desktop"
+        text_match: "contains"
+    expected_delay: 10
+    timeout: 10
+
+  7:
+    description: "Click on quit to desktop"
+    find:
+      type: "any"
+      text: "Quit to Desktop"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+    verify_success:
+      - type: "any"
+        text: "Yes"
+        text_match: "contains"
+    expected_delay: 10
+    timeout: 10
+
+  8:
+    description: "Click on yes button to quit the game"
+    find:
+      type: "any"
+      text: "Yes"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+    expected_delay: 10
+    timeout: 10
+
+# Enhanced fallback actions
+fallbacks:
+  general:
+    action: "key"
+    key: "Escape"
+    expected_delay: 2
+    max_retries: 3
+
+  # Specific fallback for stuck benchmark
+  benchmark_stuck:
+    action: "key"
+    key: "Alt+F4"
+    expected_delay: 3
+    max_retries: 2

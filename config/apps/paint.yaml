@@ -3,7 +3,8 @@
 
 metadata:
   game_name: "MS Paint Application"
-  path: "C:\\Program Files\\WindowsApps\\Microsoft.Paint_11.2506.71.0_x64__8wekyb3d8bbwe\\PaintApp\\mspaint.exe"
+  # ORIGINAL: path: "C:\\Program Files\\WindowsApps\\Microsoft.Paint_11.2506.71.0_x64__8wekyb3d8bbwe\\PaintApp\\mspaint.exe"
+  path: "C:\\Windows\\System32\\mspaint.exe"  # TEMP: Using system mspaint (app path may vary)
   process_id: "mspaint.exe"
   version: "2.0"
   benchmark_duration: 0 # No benchmark duration for MS Paint - can use it for generation time - TBD

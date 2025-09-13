@@ -1,0 +1,152 @@
+# Sid Meier's Civilization VI Benchmark Configuration
+metadata:
+  game_name: "Sid Meiers Civilization VI"
+  # ORIGINAL: path: "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Sid Meier's Civilization VI\\Base\\Binaries\\Win64Steam\\CivilizationVI_DX12.exe"
+  path: "D:\\SteamLibrary\\steamapps\\common\\Sid Meier's Civilization VI\\Base\\Binaries\\Win64Steam\\CivilizationVI_DX12.exe"  # TEMP: Updated to D: drive
+  process_id: "Sid Meier's Civilization VI (DX12)"
+  version: "1.0"
+  benchmark_duration: 280
+  startup_wait: 20
+  resolution: "1920x1080"
+  preset: "High"
+
+# Simple step-by-step workflow
+steps:
+  1:
+    description: "Conditional wait for element to appear"
+    action:
+      type: "wait"
+      condition: "element_appears"
+      max_wait: 180
+      check_interval: 5
+    verify_success:
+      - type: "any"
+        text: "CIVILIZATION"
+    expected_delay: 20
+
+  2:
+    description: "Click the Benchmark button"
+    find:
+      type: "any"
+      text: "Benchmark"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+      move_duration: 0.5
+      click_delay: 0.5
+    verify_success:
+      - type: "any"
+        text: "CIVILIZATION"
+        text_match: "contains"
+    expected_delay: 10
+    timeout: 10
+
+  3:
+    description: "Click on Civilization Game Name"
+    find:
+      type: "any"
+      text: "CIVILIZATION"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+      move_duration: 0.5
+      click_delay: 0.5
+    verify_success:
+      - type: "any"  # More flexible verification
+        text: "Gathering Storm A"
+        text_match: "contains"
+    expected_delay: 10
+    timeout: 10
+
+  4:
+    description: "Click on Gathering Storm AI Benchmark"
+    find:
+      type: "any"
+      text: "Gathering Storm A"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+      move_duration: 0.5
+      click_delay: 0.5
+    verify_success:
+      - type: "any"
+        text: "Please"
+        text_match: "contains"
+    expected_delay: 10
+    timeout: 10
+
+  5:
+    description: "Wait for benchmark to complete"
+    action:
+      type: "wait"
+      duration: 300
+    expected_delay: 0
+    timeout: 140
+
+  6:
+    description: "Handle benchmark results"
+    find:
+      type: "any"
+      text: "Close"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+    verify_success:
+      - type: "any"
+        text: "Exit"
+        text_match: "contains"
+    expected_delay: 10
+    timeout: 10
+
+  7:
+    description: "Click on Exit to desktop"
+    find:
+      type: "any"
+      text: "Exit"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+    verify_success:
+      - type: "any"
+        text: "Ok"
+        text_match: "contains"
+    expected_delay: 10
+    timeout: 10
+
+  8:
+    description: "Click on OK button to quit the game"
+    find:
+      type: "any"
+      text: "Ok"
+      text_match: "contains"
+    action:
+      type: "click"
+      button: "left"
+      clickType: "ctypes"
+    expected_delay: 10
+    timeout: 10
+
+# Enhanced fallback actions
+fallbacks:
+  general:
+    action: "key"
+    key: "Escape"
+    expected_delay: 2
+    max_retries: 3
+
+  # Specific fallback for stuck benchmark
+  benchmark_stuck:
+    action: "key"
+    key: "Alt+F4"  # Force close if needed
+    expected_delay: 3
+    max_retries: 2
